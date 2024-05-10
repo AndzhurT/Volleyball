@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+
+<body class="bg-slate-500">
+    <!-- Navbar -->
+    <div id="nav">
+        <ul id="nav-elements">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="map.html">Map</a></li>
+            <li><a href="#">Info</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">About</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Body -->
+    <div>
+        <h1 class="text-center text-xl my-2"> Map </h1>
+        <div id="map-body" class="relative container mx-auto border-2">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="../js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+/* imported fonts from google - Poppins, Work Sans */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+/* CSS reset all elements */
+*{
+    padding: 0;
+    margin: 0;
+    outline: none;
+    border: none;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Work Sans', 'Poppins'
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+#map-body {
+    height: 500px;
+    width: 800px;
+}
+
+#nav {
+    height: 48px; /* Between 48dp and 56dp tall */
+    width: 100%; /* Full width of the screen */
+    background-color: #333; /* Background color for navbar */
+    display: flex; /* Flexbox layout */
+    align-items: center; /* Center items vertically */
+    justify-content: flex-end; /* Align items to the right */
+}
+
+#nav-elements {
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove default padding */
+    display: flex; /* Flexbox to make sure that elements do not swap with float: right */
+    float: right; 
+}
+
+#nav-elements li {
+    margin-left: 8px; /* Spacing between buttons */
+}
+
+#nav-elements li a {
+    display: block; /* Display buttons inline */
+    color: white;
+    text-decoration: none;
+    padding: 12px 16px; /* Button size */
+}
+
+#nav-elements li a:hover {
+    background-color: #222;
+}
