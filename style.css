@@ -5,8 +5,8 @@
     --normal-font: 400;
     --bold-font: 600;
     --bolder-font: 900;
-    --primary-color: #0652dd;
-    --secondary-color: #ea2027;
+    --primary-color: #DC5F00;
+    --secondary-color: #000000;
     --line-height: 1.7rem;
     --transition: 0.4s ease-in;
 }
@@ -55,7 +55,7 @@ a:hover {
 
 /*Make a navbar items appear at the top */
 nav {
-    background: #fff;
+    background: #EEEEEE;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -97,6 +97,15 @@ ul {
     margin-bottom: 0.5rem;
 }
 
+/* Hero section - Volleyball */
+
+.vball {
+    display: flex;
+    flex-direction: column;
+    background-color: #000000;
+}
+
+
 .vball p {
     line-height: var(--line-height);
     text-align: center;
@@ -104,6 +113,7 @@ ul {
     margin-right: 10rem;
     margin-bottom: 2rem;
     padding: 10px;
+    color:#fff;
 }
 
 .play {
@@ -149,7 +159,7 @@ hr {
 }
 
 .map-btn, .events-btn, .wrk-btn, .chat-btn {
-    background-color: var(--secondary-color);
+    background-color: #DC5F00;
     margin-right: 1.5rem;
     margin-top: 4rem;
     display: inline-block;
@@ -160,7 +170,7 @@ hr {
 }
 
 .map-btn:hover, .events-btn:hover, .wrk-btn:hover, .chat-btn:hover {
-    background-color: #f1262d;
+    background-color: #f99300;
     color: #fff;
 }
 
