@@ -160,6 +160,7 @@ iframe {
     background-color: #f1f1f1;
     gap: 20px;
 }
+
 hr {
     margin: 20px;
     padding: 1px;
@@ -173,21 +174,25 @@ hr {
     justify-content: center;
     align-items: center;
     flex-wrap: wrap; /* Optional: if you want buttons to wrap in case of limited space */
+    margin-top: 2rem;
+    gap: 50px;
 }
 
 .map-btn, .events-btn, .wrk-btn, .chat-btn {
     background-color: #DC5F00;
-    margin-right: 1.5rem;
+    /* margin: 1.5rem; */
     display: inline-block;
-    padding: 3rem 2.5rem;
+    padding: 1.5rem;
     border: none;
     font-size: 2rem;
     border-radius: 40px;
+    height: 150px;
+    width: 200px;
 }
 
 .map-btn:hover, .events-btn:hover, .wrk-btn:hover, .chat-btn:hover {
     background-color: #000000;
-    color: #fff;
+    color: #DC5F00;
 }
 
 /* Remove the right margin for the last button to avoid extra space */
