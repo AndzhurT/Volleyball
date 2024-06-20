@@ -29,8 +29,8 @@
             <ul>
                 <!--Login-->
                 <li class="nav-item">
-                    <a href="login" class="nav-link" id="nav-log">Login</a>
-
+                    <button id="login-nav-btn" class="login-btn" onclick="openLoginForm()">Login</button>
+                    
                 </li>
 
                 <!--Signup-->            
@@ -50,6 +50,35 @@
 
         </nav>
 
+        <!-- Login Popup -->
+        <div class="login-popup" id="login-popup">
+            <div class="close-btn" id="close-btn" onclick="closeLoginForm()">&times;</div>
+            <div class="form">
+                <h2>Log In</h2>
+                <div class="form-element">
+                    <label for="email">Email</label>
+                    <input type="text" id="email" placeholder="Enter email">
+                </div>
+                <div class="form-element">
+                    <label for="password">Password</label>
+                    <input type="text" id="password" placeholder="Enter password">
+                </div>
+                <div class="form-element-row-remember-me-forgot-password">
+                    <div class="form-element">
+                        <input type="checkbox" id="remember-me">
+                        <label for="remember-me">Remember Me</label>
+                    </div>
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <div class="form-element">
+                    <button>Login</button>
+                </div>
+                <div class="signup-link">
+                    Not a member? <a href="signup">Sign Up</a>
+                </div>
+            </div>
+            
+        </div>
         <!--Volleyball section-->
         <section class="vball">
             <div class="intro-text">
@@ -108,7 +137,7 @@
 
         <!--Web Page Script-->
         <script src="main.js"></script>
-
+        
             <!-- Ion icons CDN -->
         <script
         type="module"

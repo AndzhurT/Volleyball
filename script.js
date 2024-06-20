@@ -18,14 +18,10 @@ document.getElementById('chat-nav-sign').addEventListener('click', function() {
     window.open('sign.html', '_self');
 });
 
-function openPop() {
-    const popDialog =
-        document.getElementById(
-            "nav-log"
-        );
-    popDialog.style.visibility =
-        popDialog.style.visibility ===
-        "visible"
-            ? "hidden"
-            : "visible";
+function openLoginForm() {
+    document.getElementById('login-popup').style.opacity = 1;
+}
+
+function closeLoginForm() {
+    document.getElementById('login-popup').style.opacity = 0;
 }
