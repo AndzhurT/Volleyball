@@ -86,6 +86,12 @@ ul {
     font-weight: var(--bold-font);
 }
 
+/* Hero section - Volleyball */
+
+.intro-text {
+    width: 1000px;
+}
+
 .intro-text h1 {
     margin-top: 2rem;
     font-size: 3rem;
@@ -97,14 +103,13 @@ ul {
     margin-bottom: 0.5rem;
 }
 
-/* Hero section - Volleyball */
-
 .vball {
     display: flex;
     flex-direction: column;
     background-color: #000000;
-}
-
+    justify-content: center;
+    align-items: center;
+} 
 
 .vball p {
     line-height: var(--line-height);
@@ -114,6 +119,7 @@ ul {
     margin-bottom: 2rem;
     padding: 10px;
     color:#fff;
+
 }
 
 .play {
@@ -131,25 +137,36 @@ ul {
     display: flex;
     justify-content: center;
     width: 100%;
-    margin-bottom: rem;
+    margin-bottom: 1rem;
+    height: 75%;
 }
 
 iframe {
-    max-width: 30rem;
-    border-top: 40px groove var(--primary-color);
-    border-bottom: 40px groove var(--primary-color);
-    border-right: 28px solid var(--primary-color);
-    border-left: 28px solid var(--primary-color);
+    max-width: 50rem;
+    border-top: 20px groove var(--primary-color);
+    border-bottom: 20px groove var(--primary-color);
+    border-right: 20px solid var(--primary-color);
+    border-left: 20px solid var(--primary-color);
     border-radius: 50px;
 }
 
+/* Introduction */
+
+.introduction {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f1f1f1;
+    gap: 20px;
+}
 hr {
-    margin-top: 5rem;
+    margin: 20px;
     padding: 1px;
     height: 1px;
     width: 60%;
     background-color:#000000;
-  }
+}
 
 .button-container {
     display: flex;
@@ -161,7 +178,6 @@ hr {
 .map-btn, .events-btn, .wrk-btn, .chat-btn {
     background-color: #DC5F00;
     margin-right: 1.5rem;
-    margin-top: 4rem;
     display: inline-block;
     padding: 3rem 2.5rem;
     border: none;
@@ -170,7 +186,7 @@ hr {
 }
 
 .map-btn:hover, .events-btn:hover, .wrk-btn:hover, .chat-btn:hover {
-    background-color: #f99300;
+    background-color: #000000;
     color: #fff;
 }
 
