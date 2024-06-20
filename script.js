@@ -1,16 +1,19 @@
 document.getElementById('map-btn').addEventListener('click', function() {
-    window.open('map.html', '_blank');
+    window.open('map.html', '_self');
 });
 
 document.getElementById('events-btn').addEventListener('click', function() {
-    window.open('events.html', '_blank');
+    window.open('events.html', '_self');
 });
 
 document.getElementById('wrk-btn').addEventListener('click', function() {
-    window.open('workouts.html', '_blank');
+    window.open('workouts.html', '_self');
 });
 
 document.getElementById('chat-btn').addEventListener('click', function() {
-    window.open('chat.html', '_blank');
+    window.open('chat.html', '_self');
 });
 
+document.getElementById('chat-nav-sign').addEventListener('click', function() {
+    window.open('sign.html', '_self');
+});

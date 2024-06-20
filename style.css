@@ -53,6 +53,10 @@ a:hover {
     color: var(--primary-color);
 }
 
+.fas:hover{
+    color: #000000;
+}
+
 /*Make a navbar items appear at the top */
 nav {
     background: #EEEEEE;
@@ -71,6 +75,7 @@ nav {
     font-size: 2rem;
     font-weight: 500;
 }
+
 
 ul {
     display: flex;
@@ -185,7 +190,7 @@ hr {
     padding: 1.5rem;
     border: none;
     font-size: 2rem;
-    border-radius: 40px;
+    border-radius: 60px;
     height: 150px;
     width: 200px;
 }
