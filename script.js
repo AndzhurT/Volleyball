@@ -1,21 +1,21 @@
 document.getElementById('map-btn').addEventListener('click', function() {
-    window.open('map.html', '_self');
+    window.open('../map/map.html', '_self');
 });
 
 document.getElementById('events-btn').addEventListener('click', function() {
-    window.open('events.html', '_self');
+    window.open('../events/events.html', '_self');
 });
 
 document.getElementById('wrk-btn').addEventListener('click', function() {
-    window.open('workouts.html', '_self');
+    window.open('../workouts/workouts.html', '_self');
 });
 
 document.getElementById('chat-btn').addEventListener('click', function() {
-    window.open('chat.html', '_self');
+    window.open('../chat/chat.html', '_self');
 });
 
-document.getElementById('chat-nav-sign').addEventListener('click', function() {
-    window.open('sign.html', '_self');
+document.getElementById('nav-sign').addEventListener('click', function() {
+    window.open('../signup/sign.html', '_self');
 });
 
 function openLoginForm() {
