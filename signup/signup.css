@@ -79,16 +79,17 @@ html {
     border-radius: 10px;
     outline: none;
     color: #fff;
-    font-size: 12px;
+    font-size: 14px;
     background: transparent;
-}
-
-.container .signup-box .input-box {
     box-shadow: 2px 3px 2px 1px rgb(0, 0, 34, 0.3);
 }
 
 ::placeholder{
     color: #fff;
+}
+
+.container .signup-box .input-box:focus::placeholder {
+    color: transparent;
 }
 
 .container .signup-box input[type="checkbox"] {
@@ -145,5 +146,4 @@ html {
     text-decoration: none;
     font-size: 16px;
     font-weight: var(--bold-font);
-    
 }

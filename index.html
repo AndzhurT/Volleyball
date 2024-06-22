@@ -52,32 +52,62 @@
 
         <!-- Login Popup -->
         <div class="login-popup" id="login-popup">
-            <div class="close-btn" id="close-btn" onclick="closeLoginForm()">&times;</div>
-            <div class="form">
+            <div class="close-btn" id="close-btn">&times;</div>
+            <div class="form login">
                 <h2>Log In</h2>
-                <div class="form-element">
-                    <label for="email">Email</label>
-                    <input type="text" id="email" placeholder="Enter email">
-                </div>
-                <div class="form-element">
-                    <label for="password">Password</label>
-                    <input type="text" id="password" placeholder="Enter password">
-                </div>
-                <div class="form-element-row-remember-me-forgot-password">
+                <form action="#">
                     <div class="form-element">
-                        <input type="checkbox" id="remember-me">
-                        <label for="remember-me">Remember Me</label>
+                        <label for="email">Email</label>
+                        <input type="text" id="email" placeholder="Enter email">
                     </div>
-                    <a href="#">Forgot Password?</a>
-                </div>
-                <div class="form-element">
-                    <button>Login</button>
-                </div>
-                <div class="signup-link">
-                    Not a member? <a href="../signup/signup.html">Sign Up</a>
-                </div>
+                    <div class="form-element">
+                        <label for="password">Password</label>
+                        <input type="text" id="password" placeholder="Enter password">
+                    </div>
+                    <div class="form-element-row-remember-me-forgot-password">
+                        <div class="form-element">
+                            <input type="checkbox" id="remember-me">
+                            <label for="remember-me">Remember Me</label>
+                        </div>
+                        <a href="#">Forgot Password?</a>
+                    </div>
+                    <div class="form-element">
+                        <button type="submit">Login</button>
+                    </div>
+                    <div class="signup-link">
+                        Not a member? <a href="#" class="register-link">Sign Up</a>
+                    </div>
+                </form>
             </div>
-            
+            <div class="form register">
+                <h2>Registration</h2>
+                <form action="#">
+                    <div class="form-element">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Enter username">
+                    </div>
+                    <div class="form-element">
+                        <label for="email">Email</label>
+                        <input type="text" id="email" placeholder="Enter email">
+                    </div>
+                    <div class="form-element">
+                        <label for="password">Password</label>
+                        <input type="text" id="password" placeholder="Enter password">
+                    </div>
+                    <div class="form-element-row-remember-me-forgot-password">
+                        <div class="form-element">
+                            <input type="checkbox" id="checkbox-terms-conditions">
+                            <label for="checkbox-terms-conditions">I agree to the Terms & Conditions</label>
+                        </div>
+                    </div>
+                    <div class="form-element">
+                        <button type="submit">Resgister</button>
+                    </div>
+                    <div class="signup-link">
+                        Already have an account? <a href="#" class="login-link">Login Now</a>
+                    </div>
+                </form>
+            </div>
         </div>
         <!--Volleyball section-->
         <section class="vball">

@@ -110,29 +110,72 @@ ul {
 }
 
 .login-popup {
+    display: flex;
     position: fixed;
     top: 50%;
     left: 50%;
-    opacity: 0;
-    transform: translate(-50%,-50%) scale(1);
+    opacity: 1;
+    transform: translate(-50%,-50%) scale(0);
     width: 380px;
-    padding: 20px 30px;
+    height: 360px;
     background: #fff;
     box-shadow: 2px 2px 5px 5px rgba(0, 0, 0, 0.15);
     border-radius: 10px;
-}   
+    overflow: hidden;
+    transition: transform .1s ease,
+                height .1s ease,
+}
+
+.login-popup.active-popup {
+    transform: translate(-50%,-50%) scale(1);
+}
+
+.login-popup.active {
+    height: 440px;
+}
+
+.login-popup .form {
+    width: 100%;
+    padding: 10px 40px 30px 40px;
+}
+
+.login-popup .form.login {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.login-popup.active .form.login {
+    transition: none;
+    transform: translateX(-400px);
+}
+
+.login-popup .form.register {
+    position: absolute;
+    transition: none;
+    transform: translateX(400px);
+}
+
+.login-popup.active .form.register {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
 
 .login-popup .close-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 15px;
-    height: 15px;
-    color: var(--secondary-color);
-    text-align: center;
+    top: 0;
+    right: 0;
+    width: 35px;
+    height: 35px;
+    background: #000000;
+    color: var(--primary-color);
+    font-size: 35px;
     line-height: 15px;
-    border-radius: 15px;
+    border-bottom-left-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
+    z-index: 1;
 }
 
 .login-popup .form h2 {
