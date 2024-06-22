@@ -1,0 +1,149 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,900;1,700&display=swap");
+
+/*CSS Variables */
+:root {
+    --normal-font: 400;
+    --bold-font: 600;
+    --bolder-font: 900;
+    --primary-color: #DC5F00;
+    --secondary-color: #000000;
+    --line-height: 1.7rem;
+    --transition: 0.1s ease-in-out;
+}
+
+/*Smooth scroll effects */
+html {
+    scroll-behavior: smooth;
+    height: 100%;
+}
+
+/*Resets; resets the whole margins to 0 */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Roboto", sans-serf;
+    transition: var(--transition);
+}
+
+
+.container {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.container h1 {
+    color: #fff;
+    margin-bottom: 40px;
+    cursor: default;
+}
+
+.container a{
+    color: #fff;
+    margin-bottom: 40px;
+    font-size: 32px;
+    font-weight: var(--bold-font);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.container a i:hover {
+    color: var(--primary-color);
+}
+
+.container .signup-box {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 90%;
+    max-width: 400px;
+    max-height: 400px;
+    background: var(--primary-color);
+    border-radius: 10px;
+    padding: 50px;
+    flex-basis: 50%;
+    flex-grow: 1;
+    color: #fff;
+}
+
+.container .signup-box .input-box {
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    border: 1px solid #fff;
+    border-radius: 10px;
+    outline: none;
+    color: #fff;
+    font-size: 12px;
+    background: transparent;
+}
+
+.container .signup-box .input-box {
+    box-shadow: 2px 3px 2px 1px rgb(0, 0, 34, 0.3);
+}
+
+::placeholder{
+    color: #fff;
+}
+
+.container .signup-box input[type="checkbox"] {
+    margin-top: 20px;
+}
+
+.container .signup-box label {
+    font-size: 14px;
+}
+
+.container .signup-box button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: #fff;
+    padding: 10px;
+    border: 0;
+    border-radius: 10px;
+    outline: none;
+    font-size: 16px;
+    font-weight: var(--bold-font);
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+.container .signup-box button:hover {
+    color: var(--primary-color);
+    background: var(--secondary-color);
+}
+
+.container .signup-box button span {
+    display: inline-block;
+    width: 0px;
+    overflow: hidden;
+    transition: width 0.4s;
+}
+
+.container .signup-box button:hover span {
+    width: 30px;
+}
+
+.container .login-link {
+    display: flex;
+    color: #fff;
+    margin-top: 30px;
+    font-size: 15px;
+    gap: 5px;
+    cursor: default;
+}
+
+.container .login-link a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: var(--bold-font);
+    
+}

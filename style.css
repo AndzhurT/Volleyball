@@ -311,6 +311,7 @@ hr {
     padding: 1.5rem;
     border: none;
     font-size: 2rem;
+    font-weight: var(--bold-font);
     border-radius: 60px;
     height: 150px;
     width: 200px;
