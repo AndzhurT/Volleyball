@@ -6,6 +6,18 @@ const registerLink = document.querySelector('.register-link');
 const loginButton = document.querySelector('.login-btn');
 const popupCloseButton = document.querySelector('.close-btn');
 
+// hamburger 
+const hamburgerMenu = document.querySelector('.hamburger-menu');
+const hamburgerCheckbox = document.querySelector('.hamburger-checkbox');
+const navMenuList = document.querySelector('.vb-nav-menu-group');
+
+
+const items = document.querySelectorAll('.item');
+
+// navbar
+const navbar = document.querySelector('.navbar');
+
+
 registerLink.addEventListener('click', ()=> {
     popup.classList.add('active');
 });
@@ -41,3 +53,20 @@ document.getElementById('chat-btn').addEventListener('click', function() {
 document.getElementById('nav-sign').addEventListener('click', function() {
     window.open('../signup/sign.html', '_self');
 });
+
+
+const hamburgerMenuPopup = (ev) => {
+    if (hamburgerCheckbox.checked == true) {   
+        navbar.classList.add('active');
+        navMenuList.classList.add('active');
+        items.forEach(item => item.classList.add('active'));
+    }
+    else if (hamburgerCheckbox.checked == false) {
+        navbar.classList.remove('active');
+        navMenuList.classList.remove('active');
+        items.forEach(item => item.classList.remove('active'));
+    }
+}
+
+
+hamburgerCheckbox.addEventListener('click', hamburgerMenuPopup);
