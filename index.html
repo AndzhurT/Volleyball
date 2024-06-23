@@ -16,38 +16,59 @@
         <script src="https://kit.fontawesome.com/937216652a.js" crossorigin="anonymous"></script>
     </head>
     <body>
-
         <!--Navbar-->
         <nav>
+            <div class="vb-info">
+                <ul class="vb-logo">
+                    <li>
+                        <a href="index.html" class="logo">
+                            <h1>
+                                <span class="Volleyball"> Volleyball </span>  
+                                <i class='fas'>&#xf45f;</i>
+                            </h1>
+                        </a>
+                    </li>
+                </ul>
 
-            <a href="index.html" class="logo">
-                <h1>
-                    <span class="Volleyball"> Volleyball </span>  
-                    <i class='fas'>&#xf45f;</i>
-                </h1>
-            </a>
-            <ul>
-                <!--Login-->
-                <li class="nav-item">
-                    <button id="login-nav-btn" class="login-btn" onclick="openLoginForm()">Login</button>
+                <ul class="vb-nav-group">
+                    <li>
+                        <a href="#">About</a>
+                    </li>
+                    <li>
+                        <a href="#">Contact</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div>
+                <ul class="vb-nav-entry">
+                    <!--Login-->
+                    <li class="nav-item">
+                        <button id="login-nav-btn" class="login-btn" onclick="openLoginForm()">Login</button>
+                        
+                    </li>
+
+                    <!--Signup-->            
+                    <li class="nav-item">
+                        <a href="../signup/signup.html" class="nav-link" id="nav-sign">Sign Up</a>
+
+                    </li>
                     
-                </li>
-
-                <!--Signup-->            
-                <li class="nav-item">
-                    <a href="../signup/signup.html" class="nav-link" id="nav-sign">Sign Up</a>
-
-                </li>
-    
-                <!--Options-->
-                <li class="nav-item">
-                      <!-- "Hamburger menu"/"Bar icon" to toggle the navigation links -->
-                    <a href="javascript:void(0);" class="icon" onclick="myFunction()">
-                        <i style='font-size:24px;' class="fa fa-bars"></i>
-                    </a>
-                </li>
-            </ul>
-
+                    <!--Options-->
+                    <li class="nav-item">
+                        <div class="hamburger">
+                            <!-- "Hamburger menu"/"Bar icon" to toggle the navigation links -->
+                            <label class="hamburger-menu">
+                                <input type="checkbox">
+                            </label>
+                        </div>
+                    
+                        <!-- <a href="javascript:void(0);" class="icon" onclick="myFunction()">
+                            <i style='font-size:24px;' class="fa fa-bars"></i>
+                        </a> -->
+                    </li>
+                </ul>
+            </div>
         </nav>
 
         <!-- Login Popup -->
@@ -109,6 +130,8 @@
                 </form>
             </div>
         </div>
+
+
         <!--Volleyball section-->
         <section class="vball">
             <div class="intro-text">
@@ -168,7 +191,7 @@
         <!--Web Page Script-->
         <script src="main.js"></script>
         
-            <!-- Ion icons CDN -->
+        <!-- Ion icons CDN -->
         <script
         type="module"
         src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"

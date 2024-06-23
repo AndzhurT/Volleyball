@@ -1,3 +1,5 @@
+
+// login - sign up popups
 const popup = document.querySelector('.login-popup');
 const loginLink = document.querySelector('.login-link');
 const registerLink = document.querySelector('.register-link');

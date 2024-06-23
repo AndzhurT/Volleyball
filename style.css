@@ -1,6 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,900;1,700&display=swap");
 
 /*CSS Variables */
+*, 
+*::after,
+*::before {
+    box-sizing: border-box;
+}
+
 :root {
     --normal-font: 400;
     --bold-font: 600;
@@ -9,6 +15,17 @@
     --secondary-color: #000000;
     --line-height: 1.7rem;
     --transition: 0.1s ease-in-out;
+
+
+    /* hamburger variables */
+    --bar-width: 30px;
+    --bar-height: 4px;
+    --hamburger-gap: 6px;
+    --hamburger-background: #333;
+    --hamburger-foreground: white;
+    --hamburger-margin: 26px;
+    --animation-timing: 0.2s ease-in-out;
+    --hamburger-height: calc(var(--bar-height) * 3 + var(--hamburger-gap) * 2);
 }
 
 /*Smooth scroll effects */
@@ -29,12 +46,19 @@ body {
     font-family: "Roboto", sans-serf;
 }
 
-/*Items listed styling */
+ul {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+/* Items listed styling */
 ul li {
     list-style-type: none;
 }
 
-/*Text decorators */
+/* Text decorators */
 a {
     text-decoration: none;
     color: var(--primary-color);
@@ -69,23 +93,32 @@ nav {
     top: 0;
     left: 0;
     z-index: 1;
+    overflow: hidden;
 }
 
-.logo {
-    font-size: 2rem;
+nav .vb-info {
+    display: flex;
+    gap: 2rem;
+}
+
+nav .vb-info .vb-logo .logo {
+    font-size: 24px;
     font-weight: 500;
 }
 
-
-ul {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+nav .vb-info .vb-nav-group {
+    font-size: 14px;
+    font-weight: 600;
 }
 
-.nav-item {
+.vb-nav-entry {
+    margin-right: 20px;
+    font-size: 14px;
+}
+
+/* .nav-item {
     margin-left: 2rem;
-}
+} */
 
 .nav-link {
     font-weight: var(--bold-font);
@@ -255,6 +288,90 @@ ul {
     font-size: 15px;
     font-weight: var(--bold-font);
 }
+
+/* Hamburger */
+.nav-item .hamburger {
+    display: none;
+}
+
+.nav-item .hamburger-menu {
+    --x-width: calc(var(--hamburger-height) * 1.41421356237);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--hamburger-gap);
+    width: max-content;
+    position: absolute;
+    top: var(--hamburger-margin);
+    right: calc(var(--hamburger-margin) / 2);
+    z-index: 2;
+    cursor: pointer;
+}
+
+.nav-item .hamburger-menu::before, 
+.nav-item .hamburger-menu::after,
+.nav-item .hamburger-menu input {
+    content: "";
+    width: var(--bar-width);
+    height: var(--bar-height);
+    background-color: var(--primary-color);
+    border-radius: 9999px;
+    transition: opacity var(--animation-timing), 
+                width var(--animation-timing),
+                rotate var(--animation-timing),
+                translate var(--animation-timing),
+                background-color var(--animation-timing);
+    transform-origin: right center;
+}
+
+.nav-item .options {
+    display: flex;
+    justify-content: first baseline;
+    align-items: first baseline;
+}
+
+.nav-item .hamburger-menu input {
+    appearance: none;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    cursor: pointer;
+}
+
+/* top line */
+.nav-item .hamburger-menu:has(input:checked)::before {
+    rotate: -45deg;
+    width: var(--x-width);
+    translate: 0 calc(var(--bar-height) / -2);
+}
+
+/* bottom line */
+.nav-item .hamburger-menu:has(input:checked)::after {
+    rotate: 45deg;
+    width: var(--x-width);
+    translate: 0 calc(var(--bar-height) / 2);
+}
+
+/* middle line */
+.nav-item .hamburger-menu input:checked {
+    opacity: 0;
+    width: 0;
+}
+
+.nav-item .sidebar {
+    translate: 150%;
+    transition: translate var(--animatio-timing);
+    margin-top: calc(var(--hamburger-height) + var(--hamburger-margin) + 1rem);
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    max-width: 10rem;
+    max-height: 100vh;
+}
+
+.hamburger-menu:has(input:checked) + .sidebar {
+    translate: 0;
+}
+
 /* Hero section - Volleyball */
 
 .intro-text {
@@ -368,4 +485,16 @@ hr {
 /* Remove the right margin for the last button to avoid extra space */
 .button-container button:last-child {
     margin-right: 0;
+}
+
+
+@media(max-width:992px) {
+    .nav-item .hamburger {
+        display: inline-block;
+    }
+
+    nav .vb-info .vb-nav-group {
+        display: none;
+    }
+    
 }
