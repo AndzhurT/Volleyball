@@ -5,7 +5,7 @@
     --primary-color: #DC5F00;
     --secondary-color: #000000;
     --line-height: 1.7rem;
-    --transition: 0.4s ease-in;
+    --transition: 0.1s ease-in;
 }
 
 #map {  height: 500px;
