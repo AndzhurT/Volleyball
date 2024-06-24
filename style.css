@@ -9,6 +9,15 @@
     --secondary-color: #000000;
     --line-height: 1.7rem;
     --transition: 0.1s ease-in-out;
+
+
+    /* hamburger variables */
+    --bar-width: 30px;
+    --bar-height: 4px;
+    --hamburger-gap: 6px;
+    --hamburger-margin: 26px;
+    --animation-timing: 0.2s ease-in-out;
+    --hamburger-height: calc(var(--bar-height) * 3 + var(--hamburger-gap) * 2);
 }
 
 /*Smooth scroll effects */
@@ -24,17 +33,30 @@ html {
     transition: var(--transition);
 }
 
+*, 
+*::after,
+*::before {
+    box-sizing: border-box;
+}
+
 /*Body styling */
 body {
     font-family: "Roboto", sans-serf;
 }
 
-/*Items listed styling */
+ul {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+/* Items listed styling */
 ul li {
     list-style-type: none;
 }
 
-/*Text decorators */
+/* Text decorators */
 a {
     text-decoration: none;
     color: var(--primary-color);
@@ -58,7 +80,7 @@ a:hover {
 }
 
 /*Make a navbar items appear at the top */
-nav {
+.navbar {
     background: #EEEEEE;
     display: flex;
     justify-content: space-between;
@@ -66,26 +88,38 @@ nav {
     padding: 1rem 1.5rem;
     box-shadow: 2px 3px 2px #f1f1f1;
     position: sticky;
+    height: 75px;
     top: 0;
     left: 0;
     z-index: 1;
+    max-height: 75px;
+    overflow: hidden;
 }
 
-.logo {
-    font-size: 2rem;
+.navbar .vb-info {
+    display: flex;
+    gap: 2rem;
+}
+
+.navbar .vb-info .vb-logo .logo {
+    font-size: 24px;
     font-weight: 500;
 }
 
-
-ul {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.navbar .vb-info .vb-nav-menu-group {
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden;
 }
 
-.nav-item {
+.vb-nav-entry {
+    margin-right: 20px;
+    font-size: 14px;
+}
+
+/* .nav-item {
     margin-left: 2rem;
-}
+} */
 
 .nav-link {
     font-weight: var(--bold-font);
@@ -110,29 +144,72 @@ ul {
 }
 
 .login-popup {
+    display: flex;
     position: fixed;
     top: 50%;
     left: 50%;
-    opacity: 0;
-    transform: translate(-50%,-50%) scale(1);
+    opacity: 1;
+    transform: translate(-50%,-50%) scale(0);
     width: 380px;
-    padding: 20px 30px;
+    height: 360px;
     background: #fff;
     box-shadow: 2px 2px 5px 5px rgba(0, 0, 0, 0.15);
     border-radius: 10px;
-}   
+    overflow: hidden;
+    transition: transform .1s ease,
+                height .1s ease,
+}
+
+.login-popup.active-popup {
+    transform: translate(-50%,-50%) scale(1);
+}
+
+.login-popup.active {
+    height: 440px;
+}
+
+.login-popup .form {
+    width: 100%;
+    padding: 10px 40px 30px 40px;
+}
+
+.login-popup .form.login {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.login-popup.active .form.login {
+    transition: none;
+    transform: translateX(-400px);
+}
+
+.login-popup .form.register {
+    position: absolute;
+    transition: none;
+    transform: translateX(400px);
+}
+
+.login-popup.active .form.register {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
 
 .login-popup .close-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 15px;
-    height: 15px;
-    color: var(--secondary-color);
-    text-align: center;
+    top: 0;
+    right: 0;
+    width: 35px;
+    height: 35px;
+    background: #000000;
+    color: var(--primary-color);
+    font-size: 35px;
     line-height: 15px;
-    border-radius: 15px;
+    border-bottom-left-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
+    z-index: 1;
 }
 
 .login-popup .form h2 {
@@ -212,6 +289,96 @@ ul {
     font-size: 15px;
     font-weight: var(--bold-font);
 }
+
+/* Hamburger */
+.nav-item .hamburger {
+    display: none;
+}
+
+.nav-item .hamburger-menu {
+    --x-width: calc(var(--hamburger-height) * 1.41421356237);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--hamburger-gap);
+    width: max-content;
+    position: absolute;
+    top: var(--hamburger-margin);
+    right: calc(var(--hamburger-margin) / 2);
+    z-index: 2;
+    cursor: pointer;
+}
+
+.nav-item .hamburger-menu::before, 
+.nav-item .hamburger-menu::after,
+.nav-item .hamburger-menu input {
+    content: "";
+    width: var(--bar-width);
+    height: var(--bar-height);
+    background-color: var(--primary-color);
+    border-radius: 9999px;
+    transition: opacity var(--animation-timing), 
+                width var(--animation-timing),
+                rotate var(--animation-timing),
+                translate var(--animation-timing),
+                background-color var(--animation-timing);
+    transform-origin: right center;
+}
+
+.nav-item .options {
+    display: flex;
+    justify-content: first baseline;
+    align-items: first baseline;
+}
+
+.nav-item .hamburger-menu input {
+    appearance: none;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    cursor: pointer;
+}
+
+/* top line */
+.nav-item .hamburger-menu:has(input:checked)::before {
+    rotate: -45deg;
+    width: var(--x-width);
+    translate: 0 calc(var(--bar-height) / -2);
+}
+
+/* bottom line */
+.nav-item .hamburger-menu:has(input:checked)::after {
+    rotate: 45deg;
+    width: var(--x-width);
+    translate: 0 calc(var(--bar-height) / 2);
+}
+
+/* middle line */
+.nav-item .hamburger-menu input:checked {
+    opacity: 0;
+    width: 0;
+}
+
+
+/* active classes for hamburger menu */
+.navbar.active {
+    overflow: visible;
+}
+
+.navbar .vb-info .vb-nav-menu-group.active {
+    max-height: 300px;
+    background-color: #EEEEEE;   
+}
+
+.navbar .vb-info .vb-nav-menu-group .item.active {
+    cursor: pointer;
+    opacity: 1;
+    display: block;
+    height: 100%;
+    width: 100%;
+    padding: 20px 0;
+}
+
 /* Hero section - Volleyball */
 
 .intro-text {
@@ -245,7 +412,6 @@ ul {
     margin-bottom: 2rem;
     padding: 10px;
     color:#fff;
-
 }
 
 .play {
@@ -311,6 +477,7 @@ hr {
     padding: 1.5rem;
     border: none;
     font-size: 2rem;
+    font-weight: var(--bold-font);
     border-radius: 60px;
     height: 150px;
     width: 200px;
@@ -324,4 +491,48 @@ hr {
 /* Remove the right margin for the last button to avoid extra space */
 .button-container button:last-child {
     margin-right: 0;
+}
+
+/* Media query responsiveness */
+
+/* Laptop size */
+@media(max-width:992px) {
+    .nav-item .hamburger {
+        display: inline-block;
+    }
+
+    .navbar .vb-info .vb-nav-menu-group {
+        display: block;
+        position: absolute;
+        top: 75px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        text-align: center;
+        justify-content: center;
+        transition: all 0.5s;
+        gap: 0;
+    }
+
+    .navbar .vb-info .vb-nav-menu-group li {
+        width: 100%;
+    }
+
+    .navbar .vb-info .vb-nav-menu-group li:hover {
+        background-color: black;
+    }
+
+    .navbar .vb-info .vb-nav-menu-group li:hover a{
+        color: var(--primary-color);
+    }
+    
+    .navbar .vb-info .vb-nav-menu-group .item {
+        opacity: 0;
+        color: black;
+    }
+
+    .navbar .vb-info .vb-nav-menu-group .item:hover {
+        color: var(--primary-color);
+    }
+    
 }

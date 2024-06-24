@@ -1,0 +1,273 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,900;1,700&display=swap");
+
+/*CSS Variables */
+:root {
+    --normal-font: 400;
+    --bold-font: 600;
+    --bolder-font: 900;
+    --primary-color: #DC5F00;
+    --secondary-color: #000000;
+    --line-height: 1.7rem;
+    --transition: 0.1s ease-in-out;
+}
+
+/*Smooth scroll effects */
+html {
+    scroll-behavior: smooth;
+    height: 100%;
+}
+
+/*Resets; resets the whole margins to 0 */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Roboto", sans-serf;
+    transition: var(--transition);
+}
+
+
+.container {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* flex-direction: column; */
+}
+
+.container .headers {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #fff;
+    margin: 40px 0;
+    overflow: hidden;
+    cursor: default;
+}
+
+.container .headers .create-account-header {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.container .headers.active .create-account-header {
+    transition: none;
+    transform: translateX(-400px);
+}
+
+.container .headers .login-header {
+    position: absolute;
+    transition: none;
+    transform: translateX(400px);
+}
+
+.container .headers.active .login-header {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.container .logo{
+    color: #fff;
+    font-size: 32px;
+    font-weight: var(--bold-font);
+    text-decoration: none;
+    gap: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container a i:hover {
+    color: var(--primary-color);
+}
+
+.container .form-login-register {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 400px;
+}
+
+.container .form-login-register .signup-register-box {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    width: 90%;
+    width: 400px;
+    height: 380px;
+    background: var(--primary-color);
+    border-radius: 10px;
+    padding: 50px 0;
+    overflow: hidden;
+    color: #fff;
+    transition: transform .1s ease,
+                height .1s ease,
+}
+
+.container .form-login-register .signup-register-box.active {
+    height: 312px;
+}
+
+.container .form-login-register .signup-register-box .form {
+    width: 400px;
+    padding: 0 40px;
+}
+
+.container .form-login-register .signup-register-box .form.login {
+    position: absolute;
+    transition: none;
+    transform: translateX(400px);
+}
+
+.container .form-login-register .signup-register-box.active .form.login {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.container .form-login-register .signup-register-box.active .form.register {
+    transition: none;
+    transform: translateX(-400px);
+}
+
+.container .form-login-register .signup-register-box .form.register {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.form-element-row-remember-me-forgot-password {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.form-element-row-remember-me-forgot-password a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: var(--bold-font);
+    cursor: pointer;
+}
+
+.form-element {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.form-element .terms {
+    margin-bottom: 15px;
+}
+
+.container .form-login-register .signup-register-box .form.register {
+    transform: translateX(0);
+}
+
+.container .form-login-register .signup-register-box .input-box {
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    border: 1px solid #fff;
+    border-radius: 10px;
+    outline: none;
+    color: #fff;
+    font-size: 14px;
+    background: transparent;
+    box-shadow: 2px 3px 2px 1px rgb(0, 0, 34, 0.3);
+}
+
+::placeholder{
+    color: #fff;
+}
+
+.container .form-login-register .signup-register-box .input-box:focus::placeholder {
+    color: transparent;
+}
+
+.container .form-login-register .signup-register-box .form.register input[type="checkbox"] {
+    margin-bottom: 15px;
+}
+
+.container .form-login-register .signup-register-box label {
+    font-size: 14px;
+}
+
+.container .form-login-register .signup-register-box button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: #fff;
+    padding: 10px;
+    border: 0;
+    border-radius: 10px;
+    outline: none;
+    font-size: 16px;
+    font-weight: var(--bold-font);
+    cursor: pointer;
+}
+
+.container .form-login-register .signup-register-box button:hover {
+    color: var(--primary-color);
+    background: var(--secondary-color);
+}
+
+.container .form-login-register .signup-register-box button span {
+    display: inline-block;
+    width: 0px;
+    overflow: hidden;
+    transition: width 0.4s;
+}
+
+.container .form-login-register .signup-register-box button:hover span {
+    width: 30px;
+}
+
+.container .login-register-link {
+    display: flex;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    width: 400px;
+    color: #fff;
+    margin-top: 30px;
+    font-size: 15px;
+    gap: 5px;
+    overflow: hidden;
+    cursor: default;
+}
+
+.container .login-register-link a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: var(--bold-font);
+    cursor: pointer;
+}
+
+.container .login-register-link .login-register-label {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.container .login-register-link.active .login-register-label {
+    transition: none;
+    transform: translateX(-400px);
+}
+
+.container .login-register-link .register-login-label {
+    position: absolute;
+    transition: none;
+    transform: translateX(400px);
+}
+
+.container .login-register-link.active .register-login-label {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
