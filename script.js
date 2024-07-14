@@ -43,7 +43,7 @@ document.getElementById('events-btn').addEventListener('click', function() {
 });
 
 document.getElementById('wrk-btn').addEventListener('click', function() {
-    window.open('../workouts/workouts.html', '_self');
+    window.open('../workouts/workout.html', '_self');
 });
 
 document.getElementById('chat-btn').addEventListener('click', function() {

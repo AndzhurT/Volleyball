@@ -1,0 +1,144 @@
+:root {
+    --normal-font: 400;
+    --bold-font: 600;
+    --bolder-font: 900;
+    --primary-color: #DC5F00;
+    --secondary-color: #000000;
+    --line-height: 1.7rem;
+    --transition: 0.1s ease-in;
+    --transition: 0.1s ease-in-out;
+}
+
+/*Smooth scroll effects */
+html {
+    scroll-behavior: smooth;
+}
+
+/*Resets; resets the whole margins to 0 */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: var(--transition);
+}
+
+*, 
+*::after,
+*::before {
+    box-sizing: border-box;
+}
+
+/*Body styling */
+body {
+    font-family: "Roboto", sans-serf;
+}
+
+#map {  height: 500px;
+        width: 96%;
+        margin-inline-start: 1%;
+        border: 10px solid #DC5F00;
+        border-radius: 15px;
+}
+
+nav {
+    background: #EEEEEE;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    box-shadow: 2px 3px 2px #f1f1f1;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+a {
+    text-decoration: none;
+}
+
+
+.Volleyball {
+    color: var(--secondary-color);
+}
+
+.logo {
+    font-size: 2rem;
+    font-weight: 500;
+}
+
+/*Unchangeable */
+.fas {
+    color: var(--primary-color);
+}
+
+.fas:hover{
+    color: #000000;
+}
+
+.intro-text{
+    background-color: #000000;
+    height: 100vh;
+}
+
+
+body {
+    font-family: "Roboto", sans-serf;
+    min-height: 100%;
+    margin: 0;
+}
+
+html {
+    min-height: 100%;
+    margin: 0;
+}
+
+.text h1{
+    color:#DC5F00;
+    text-align: center;
+}
+
+.text p {
+    color: #fff;
+    margin-inline-start: 1%;
+}
+
+.introduction {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f1f1f1;
+    gap: 20px;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap; /* Optional: if you want buttons to wrap in case of limited space */
+    margin-top: 2rem;
+    gap: 50px;
+}
+
+.main-btn, .map-btn, .events-btn, .chat-btn {
+    background-color: #DC5F00;
+    /* margin: 1.5rem; */
+    display: inline-block;
+    padding: 1.5rem;
+    border: none;
+    font-size: 2rem;
+    font-weight: var(--bold-font);
+    border-radius: 60px;
+    height: 150px;
+    width: 200px;
+}
+
+.main-btn:hover, .map-btn:hover, .events-btn:hover, .chat-btn:hover {
+    background-color: #000000;
+    color: #DC5F00;
+}
+
+/* Remove the right margin for the last button to avoid extra space */
+.button-container button:last-child {
+    margin-right: 0;
+}
