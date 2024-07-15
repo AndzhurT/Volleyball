@@ -12,15 +12,120 @@
     <script src="https://kit.fontawesome.com/937216652a.js" crossorigin="anonymous"></script>
 </head>
 
-<body>
-    <nav>
-        <a href="#" class="logo">
-            <h1>
-                <span class="Volleyball"> Volleyball </span>  
-                <i class='fas'>&#xf45f;</i>
-            </h1>
-        </a>
-    </nav>
+<!--Navbar-->
+<nav class="navbar">
+    <div class="vb-info">
+        <ul class="vb-logo">
+            <li>
+                <a href="index.html" class="logo">
+                    <h1>
+                        <span class="Volleyball"> Volleyball </span>  
+                        <i class='fas'>&#xf45f;</i>
+                    </h1>
+                </a>
+            </li>
+        </ul>
+
+        <ul class="vb-nav-menu-group">
+            <li>
+                <a href="map/map.html" class="item">About</a>
+            </li>
+            <li>
+                <a href="map/map.html" class="item">Contact</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div>
+        <ul class="vb-nav-entry">
+            <!--Login-->
+            <li class="nav-item">
+                <button id="login-nav-btn" class="login-btn" onclick="openLoginForm()">Login</button>
+                
+            </li>
+
+            <!--Signup-->            
+            <li class="nav-item">
+                <a href="../signup/signup.html" class="nav-link" id="nav-sign">Sign Up</a>
+
+            </li>
+            
+            <!--Options-->
+            <li class="nav-item">
+                <div class="hamburger">
+                    <!-- "Hamburger menu"/"Bar icon" to toggle the navigation links -->
+                    <label class="hamburger-menu">
+                        <input type="checkbox" class="hamburger-checkbox">
+                    </label>
+                </div>
+            
+                <!-- <a href="javascript:void(0);" class="icon" onclick="myFunction()">
+                    <i style='font-size:24px;' class="fa fa-bars"></i>
+                </a> -->
+            </li>
+        </ul>
+    </div>
+</nav> 
+
+<!-- Login Popup -->
+<div class="login-popup" id="login-popup">
+    <div class="close-btn" id="close-btn">&times;</div>
+    <div class="form login">
+        <h2>Log In</h2>
+        <form action="#">
+            <div class="form-element">
+                <label for="email">Email</label>
+                <input type="text" id="email" placeholder="Enter email">
+            </div>
+            <div class="form-element">
+                <label for="password">Password</label>
+                <input type="text" id="password" placeholder="Enter password">
+            </div>
+            <div class="form-element-row-remember-me-forgot-password">
+                <div class="form-element">
+                    <input type="checkbox" id="remember-me">
+                    <label for="remember-me">Remember Me</label>
+                </div>
+                <a href="#">Forgot Password?</a>
+            </div>
+            <div class="form-element">
+                <button type="submit">Login</button>
+            </div>
+            <div class="signup-link">
+                Not a member? <a href="#" class="register-link">Sign Up</a>
+            </div>
+        </form>
+    </div>
+    <div class="form register">
+        <h2>Registration</h2>
+        <form action="#">
+            <div class="form-element">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="form-element">
+                <label for="email">Email</label>
+                <input type="text" id="email" placeholder="Enter email">
+            </div>
+            <div class="form-element">
+                <label for="password">Password</label>
+                <input type="text" id="password" placeholder="Enter password">
+            </div>
+            <div class="form-element-row-remember-me-forgot-password">
+                <div class="form-element">
+                    <input type="checkbox" id="checkbox-terms-conditions">
+                    <label for="checkbox-terms-conditions">I agree to the Terms & Conditions</label>
+                </div>
+            </div>
+            <div class="form-element">
+                <button type="submit">Resgister</button>
+            </div>
+            <div class="signup-link">
+                Already have an account? <a href="#" class="login-link">Login Now</a>
+            </div>
+        </form>
+    </div>
+</div>
 
     <div class="intro-text">
         <div class="text">

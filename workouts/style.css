@@ -1,3 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,900;1,700&display=swap");
+
+/*CSS Variables */
 :root {
     --normal-font: 400;
     --bold-font: 600;
@@ -5,8 +8,16 @@
     --primary-color: #DC5F00;
     --secondary-color: #000000;
     --line-height: 1.7rem;
-    --transition: 0.1s ease-in;
     --transition: 0.1s ease-in-out;
+
+
+    /* hamburger variables */
+    --bar-width: 30px;
+    --bar-height: 4px;
+    --hamburger-gap: 6px;
+    --hamburger-margin: 26px;
+    --animation-timing: 0.2s ease-in-out;
+    --hamburger-height: calc(var(--bar-height) * 3 + var(--hamburger-gap) * 2);
 }
 
 /*Smooth scroll effects */
@@ -32,6 +43,362 @@ html {
 body {
     font-family: "Roboto", sans-serf;
 }
+
+ul {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+/* Items listed styling */
+ul li {
+    list-style-type: none;
+}
+
+/* Text decorators */
+a {
+    text-decoration: none;
+    color: var(--primary-color);
+}
+
+a:hover {
+    color: var(--secondary-color);
+}
+
+.Volleyball {
+    color: var(--secondary-color);
+}
+
+/*Unchangeable */
+.fas {
+    color: var(--primary-color);
+}
+
+.fas:hover{
+    color: #000000;
+}
+
+/*Make a navbar items appear at the top */
+.navbar {
+    background: #EEEEEE;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    box-shadow: 2px 3px 2px #f1f1f1;
+    position: sticky;
+    height: 75px;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    max-height: 75px;
+    overflow: hidden;
+}
+
+.navbar .vb-info {
+    display: flex;
+    gap: 2rem;
+}
+
+.navbar .vb-info .vb-logo .logo {
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.navbar .vb-info .vb-nav-menu-group {
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden;
+}
+
+.vb-nav-entry {
+    margin-right: 20px;
+    font-size: 14px;
+}
+
+/* .nav-item {
+    margin-left: 2rem;
+} */
+
+.nav-link {
+    font-weight: var(--bold-font);
+}
+
+.login-btn {
+    padding: 10px 25px;
+    font-size: inherit;
+    font-weight: var(--bold-font);
+    text-decoration: none;
+    color: var(--secondary-color);
+    background-color: var(--primary-color);
+    border: none;
+    outline: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.login-btn:hover {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+}
+
+.login-popup {
+    z-index: 9999;
+    display: flex;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    opacity: 1;
+    transform: translate(-50%,-50%) scale(0);
+    width: 380px;
+    height: 360px;
+    background: #fff;
+    box-shadow: 2px 2px 5px 5px rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform .1s ease,
+                height .1s ease,
+}
+
+.login-popup.active-popup {
+    transform: translate(-50%,-50%) scale(1);
+}
+
+.login-popup.active {
+    height: 440px;
+}
+
+.login-popup .form {
+    width: 100%;
+    padding: 10px 40px 30px 40px;
+}
+
+.login-popup .form.login {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.login-popup.active .form.login {
+    transition: none;
+    transform: translateX(-400px);
+}
+
+.login-popup .form.register {
+    position: absolute;
+    transition: none;
+    transform: translateX(400px);
+}
+
+.login-popup.active .form.register {
+    transition: transform 0.09s ease;
+    transform: translateX(0);
+}
+
+.login-popup .close-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 35px;
+    height: 35px;
+    background: #000000;
+    color: var(--primary-color);
+    font-size: 35px;
+    line-height: 15px;
+    border-bottom-left-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.login-popup .form h2 {
+    text-align: center;
+    color: var(--secondary-color);
+    margin: 10px 0 20px;
+    font-size: 25px;
+    cursor: default;
+}
+
+.login-popup .form .form-element {
+    margin: 15px 0px;
+}
+
+.login-popup .form .form-element label {
+    font-size: 14px;
+    color: #222;
+}
+
+.login-popup .form .form-element input[type="text"],
+.login-popup .form .form-element input[type="password"] {
+    margin-top: 5px;
+    display: block;
+    width: 100%;
+    padding: 10px;
+    outline: none;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+}
+
+.login-popup .form .form-element-row-remember-me-forgot-password {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.login-popup .form .form-element-row-remember-me-forgot-password .form-element {
+    display: flex;
+    gap: 5px;
+    margin: 0;
+    align-items: center;
+}
+
+.login-popup .form .form-element-row-remember-me-forgot-password a {
+    font-size: 15px;
+    font-weight: var(--bold-font);
+}
+
+.login-popup .form .form-element button {
+    width: 100%;
+    height: 40px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-weight: var(--bold-font);
+    background: var(--primary-color);
+    color: var(--secondary-color);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.login-popup .form .form-element button:hover {
+    background: var(--secondary-color);
+    color: var(--primary-color);
+}
+
+.login-popup .form .signup-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    gap: 5px;
+    cursor: default;
+}
+
+.login-popup .form .signup-link a {
+    font-size: 15px;
+    font-weight: var(--bold-font);
+}
+
+/* Hamburger */
+.nav-item .hamburger {
+    display: none;
+}
+
+.nav-item .hamburger-menu {
+    --x-width: calc(var(--hamburger-height) * 1.41421356237);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--hamburger-gap);
+    width: max-content;
+    position: absolute;
+    top: var(--hamburger-margin);
+    right: calc(var(--hamburger-margin) / 2);
+    z-index: 2;
+    cursor: pointer;
+}
+
+.nav-item .hamburger-menu::before, 
+.nav-item .hamburger-menu::after,
+.nav-item .hamburger-menu input {
+    content: "";
+    width: var(--bar-width);
+    height: var(--bar-height);
+    background-color: var(--primary-color);
+    border-radius: 9999px;
+    transition: opacity var(--animation-timing), 
+                width var(--animation-timing),
+                rotate var(--animation-timing),
+                translate var(--animation-timing),
+                background-color var(--animation-timing);
+    transform-origin: right center;
+}
+
+.nav-item .options {
+    display: flex;
+    justify-content: first baseline;
+    align-items: first baseline;
+}
+
+.nav-item .hamburger-menu input {
+    appearance: none;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    cursor: pointer;
+}
+
+/* top line */
+.nav-item .hamburger-menu:has(input:checked)::before {
+    rotate: -45deg;
+    width: var(--x-width);
+    translate: 0 calc(var(--bar-height) / -2);
+}
+
+/* bottom line */
+.nav-item .hamburger-menu:has(input:checked)::after {
+    rotate: 45deg;
+    width: var(--x-width);
+    translate: 0 calc(var(--bar-height) / 2);
+}
+
+/* middle line */
+.nav-item .hamburger-menu input:checked {
+    opacity: 0;
+    width: 0;
+}
+
+
+/* active classes for hamburger menu */
+.navbar.active {
+    overflow: visible;
+}
+
+.navbar .vb-info .vb-nav-menu-group.active {
+    max-height: 300px;
+    background-color: #EEEEEE;   
+}
+
+.navbar .vb-info .vb-nav-menu-group .item.active {
+    cursor: pointer;
+    opacity: 1;
+    display: block;
+    height: 100%;
+    width: 100%;
+    padding: 20px 0;
+}
+
+/*Resets; resets the whole margins to 0 */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: var(--transition);
+}
+
+*, 
+*::after,
+*::before {
+    box-sizing: border-box;
+}
+
+/*Body styling */
+body {
+    font-family: "Roboto", sans-serf;
+}
+
 
 #map {  height: 500px;
         width: 96%;
