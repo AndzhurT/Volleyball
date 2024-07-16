@@ -488,7 +488,7 @@ html {
 }
 
 .main-btn, .events-btn, .wrk-btn, .chat-btn {
-    background-color: #DC5F00;
+    background-color: #ffffff;
     /* margin: 1.5rem; */
     display: inline-block;
     padding: 1.5rem;
@@ -501,8 +501,8 @@ html {
 }
 
 .main-btn:hover, .events-btn:hover, .wrk-btn:hover, .chat-btn:hover {
-    background-color: #000000;
-    color: #DC5F00;
+    background-color: #DC5F00;
+    color: #ffffff;
 }
 
 /* Remove the right margin for the last button to avoid extra space */
