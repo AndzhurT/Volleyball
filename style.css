@@ -79,6 +79,10 @@ a:hover {
     color: #000000;
 }
 
+ion-icon {
+    font-size: 32px;
+}
+
 /*Make a navbar items appear at the top */
 .navbar {
     background: #EEEEEE;
@@ -537,7 +541,7 @@ hr {
     
 }
 
-.bottom-content{
+.bottom-content {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -546,7 +550,11 @@ hr {
     gap: 20px;
 }
 
-.bottom-intro p{
+.bottom-content .bottom-intro {
+    width: 1000px;
+}
+
+.bottom-content .bottom-intro p {
     line-height: var(--line-height);
     /* margin-left: 10rem;
     margin-right: 10rem;
@@ -556,7 +564,7 @@ hr {
     text-align: center;
 }
 
-.bottom-intro h2{
+.bottom-content .bottom-intro h2 {
     margin-top: 2rem;
     font-size: 3rem;
     margin-bottom: 1rem;
@@ -564,16 +572,21 @@ hr {
     font-size: 32px;
 }
 
-.bottom-intro hr{
+.bottom-content .bottom-intro hr {
     margin: 5px auto 10px auto;
     color: #fff;
     background-color: #fff;
 }
 
-.bottom-intro ion-icon {
-    color: rgb(252, 113, 0);
-  }
+.bottom-content .bottom-intro .icons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px;
+    color: var(--primary-color);
+}
 
-.bottom-intro{
-    width: 1000px;
+.bottom-content .bottom-intro .icons ion-icon:hover {
+    color: #fff;
+    cursor: pointer;
 }
