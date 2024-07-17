@@ -505,7 +505,7 @@ html {
 
 .main-btn:hover, .events-btn:hover, .wrk-btn:hover, .chat-btn:hover {
     background-color: #DC5F00;
-    color: #ffffff;
+    color: #000000;
 }
 
 /* Remove the right margin for the last button to avoid extra space */
