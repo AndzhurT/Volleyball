@@ -479,15 +479,14 @@ html {
     justify-content: center;
     align-items: center;
     background-color: #f1f1f1;
-    gap: 20px;
 }
 
 .button-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap; /* Optional: if you want buttons to wrap in case of limited space */
-    margin-top: 2rem;
+    flex-wrap: wrap;
+    margin: 2rem;
     gap: 50px;
 }
 
