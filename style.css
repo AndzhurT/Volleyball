@@ -453,7 +453,16 @@ iframe {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: #f1f1f1;
+    background-color: #000000;
+    gap: 20px;
+}
+
+hr {
+    margin: 20px;
+    padding: 1px;
+    height: 1px;
+    width: 60%;
+    background-color: #000000;
 }
 
 .button-container {
