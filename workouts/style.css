@@ -478,16 +478,7 @@ html {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: #000000;
-    gap: 20px;
-}
-
-hr {
-    margin: 20px;
-    padding: 1px;
-    height: 1px;
-    width: 60%;
-    background-color: #000000;
+    background-color: #f1f1f1;
 }
 
 .button-container {
