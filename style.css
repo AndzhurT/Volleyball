@@ -454,23 +454,14 @@ iframe {
     justify-content: center;
     align-items: center;
     background-color: #f1f1f1;
-    gap: 20px;
-}
-
-hr {
-    margin: 20px;
-    padding: 1px;
-    height: 1px;
-    width: 60%;
-    background-color:#000000;
 }
 
 .button-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap; /* Optional: if you want buttons to wrap in case of limited space */
-    margin-top: 2rem;
+    flex-wrap: wrap;
+    margin: 2rem;
     gap: 50px;
 }
 
@@ -541,6 +532,7 @@ hr {
     
 }
 
+/* Bottom footer */
 .bottom-content {
     display: flex;
     flex-direction: column;
@@ -556,9 +548,6 @@ hr {
 
 .bottom-content .bottom-intro p {
     line-height: var(--line-height);
-    /* margin-left: 10rem;
-    margin-right: 10rem;
-    margin-bottom: 0.5rem; */
     padding: 10px;
     color:#fff;
     text-align: center;
@@ -570,12 +559,14 @@ hr {
     margin-bottom: 1rem;
     text-align: center;
     font-size: 32px;
+    cursor: default;
 }
 
 .bottom-content .bottom-intro hr {
     margin: 5px auto 10px auto;
     color: #fff;
     background-color: #fff;
+    width: 60%;
 }
 
 .bottom-content .bottom-intro .icons {
