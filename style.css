@@ -365,6 +365,7 @@ iframe {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    background-color: var(--secondary-color);
     background-color: #000000;
 }
 

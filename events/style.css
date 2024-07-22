@@ -477,7 +477,7 @@ html {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: #000000;
+    background-color: var(--secondary-color);
 }
 
 .button-container {
