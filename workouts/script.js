@@ -66,3 +66,14 @@ document.getElementById('events-btn').addEventListener('click', function() {
 document.getElementById('chat-btn').addEventListener('click', function() {
     window.location.href = "../chat/chat.html";
 });
+
+/* Workout categorie section */
+
+const categories = document.querySelectorAll('.category');
+
+categories.forEach(category => {
+    category.addEventListener('click', () => {
+        const description = category.querySelector('p');
+        description.classList.toggle('visible');
+    });
+});

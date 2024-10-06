@@ -66,3 +66,38 @@ document.getElementById('events-btn').addEventListener('click', function() {
 document.getElementById('wrk-btn').addEventListener('click', function() {
     window.location.href = "../workouts/workout.html";
 });
+
+/* Chat section */
+// Get DOM elements
+const chatMessages = document.getElementById("chat-messages");
+const chatInput = document.getElementById("chat-input");
+const sendMessageBtn = document.getElementById("send-message-btn");
+
+// Function to send a message
+function sendMessage() {
+    const message = chatInput.value.trim();
+    if (message) {
+        // Create a new message element
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("chat-message");
+        messageElement.textContent = message;
+
+        // Append message to chat
+        chatMessages.appendChild(messageElement);
+
+        // Clear input
+        chatInput.value = "";
+        // Scroll to the bottom of the chat
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
+
+// Event listener for the send button
+sendMessageBtn.addEventListener("click", sendMessage);
+
+// Optional: Send message with Enter key
+chatInput.addEventListener("keypress", function (event) {
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+});

@@ -46,18 +46,21 @@
 
                 </li>
                 
-                <!--Options-->
+                <!-- Options for Hamburger Menu (Dropdown) -->
                 <li class="nav-item">
                     <div class="hamburger">
                         <!-- "Hamburger menu"/"Bar icon" to toggle the navigation links -->
                         <label class="hamburger-menu">
                             <input type="checkbox" class="hamburger-checkbox">
+                            <!-- Navigation menu items hidden initially -->
+                            <div class="dropdown-menu">
+                                <a href="#">Home</a>
+                                <a href="#">About</a>
+                                <a href="#">Events</a>
+                                <a href="#">Contact</a>
+                            </div>
                         </label>
                     </div>
-                
-                    <!-- <a href="javascript:void(0);" class="icon" onclick="myFunction()">
-                        <i style='font-size:24px;' class="fa fa-bars"></i>
-                    </a> -->
                 </li>
             </ul>
         </div>
@@ -128,6 +131,21 @@
             <h1>Volleyball Chat</h1>
             <p>A place to play, improve, and chill</p>
         </div>
+
+        <section class="chat-section">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2>Chat Room</h2>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Chat messages will be displayed here -->
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Type your message..." />
+                    <button id="send-message-btn">Send</button>
+                </div>
+            </div>
+        </section>
 
     <div class="introduction">
         <div class="button-container">

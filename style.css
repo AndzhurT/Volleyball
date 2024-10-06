@@ -341,21 +341,28 @@ ion-icon {
     align-items: center;
 }
 
-.iframe-container {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    margin-bottom: 1rem;
-    height: 75%;
+.video-panel {
+    position: relative;
+    width: 80%; /* Width of the video panel */
+    max-width: 800px; /* Maximum width */
+    border-radius: 15px;
+    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3); /* Adds shadow for depth */
+    overflow: hidden; /* Ensures no overflow */
+    transition: transform 0.1s ease; /* Smooth transition for hover effect */
 }
 
-iframe {
-    max-width: 50rem;
-    border-top: 20px groove var(--primary-color);
-    border-bottom: 20px groove var(--primary-color);
-    border-right: 20px solid var(--primary-color);
-    border-left: 20px solid var(--primary-color);
-    border-radius: 50px;
+.video-panel:hover {
+    transform: scale(1.05); /* Slightly zooms on hover */
+}
+
+.video-player {
+    width: 100%; /* Full width of the panel */
+    height: auto; /* Automatic height to maintain aspect ratio */
+    border-radius: 15px; /* Match the panel corners */
+}
+
+.video-panel:hover .play-button {
+    opacity: 1; /* Full opacity on hover */
 }
 
 /* Introduction */

@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Volleyball Locations</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <link rel="stylesheet" href="style.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="script.js" defer></script>
 
     <!--Logo-->
@@ -131,18 +129,35 @@
             <p>A place to play, improve, and chill</p>
         </div>
 
-        <div class="map-container">
-            <input type="text" id="search" placeholder="Search for an address..." style="width: 100%; padding: 10px; margin-bottom: 10px;">
-            <button id="add-btn" style="width: 100%; padding: 10px; margin-bottom: 10px;">Add Location</button> 
-            <div class="leaf" id="map" style="height: 500px;"></div>
+        <div class="volleyball-locations">
+            <div class="location-card">
+                <img src="\map\Mason Mill park.jpg" alt="Location 1" class="location-image">
+                <div class="location-details">
+                    <h3>Volleyball Court 1</h3>
+                    <p>Added by: Spektra</p>
+                    <a href="https://www.google.com/maps/place/Masons+Mill+Park/@40.1593633,-75.0830339,16z/data=!3m1!4b1!4m6!3m5!1s0x89c6ae1f61699b9d:0xfdd9a2aec6c5645d!8m2!3d40.1593592!4d-75.080459!16s%2Fg%2F1tmgdcwy?hl=en&entry=ttu&g_ep=EgoyMDI0MTAwMi4xIKXMDSoASAFQAw%3D%3D" target="_blank" class="map-link">View on Google Maps</a>
+                </div>
+            </div>
+        
+            <div class="location-card">
+                <img src="\map\LA Grant.png" alt="Location 2" class="location-image">
+                <div class="location-details">
+                    <h3>Volleyball Court 2</h3>
+                    <p>Added by: Spektra</p>
+                    <a href="https://www.google.com/maps/place/LA+Fitness/@40.0767403,-75.0280498,3a,75y,218.96h,103.38t/data=!3m7!1e1!3m5!1se5IJMj0872LPFEw-G8yv6Q!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-13.378306822493826%26panoid%3De5IJMj0872LPFEw-G8yv6Q%26yaw%3D218.95549190711156!7i16384!8i8192!4m9!3m8!1s0x89c6b399736750e5:0x278e1f71c34064f!8m2!3d40.0764762!4d-75.0283487!10e5!14m1!1BCgIgAQ!16s%2Fg%2F1tfd7ykh?hl=en&coh=205410&entry=ttu&g_ep=EgoyMDI0MTAwMi4xIKXMDSoASAFQAw%3D%3D" target="_blank" class="map-link">View on Google Maps</a>
+                </div>
+            </div>
+            <!-- Add more location cards here -->
         </div>
+        
+
     </div>
 
     <div class="button-container">
         <button id="main-btn" class="main-btn">Main</button>
         <button id="events-btn" class="events-btn">Events</button>
         <button id="wrk-btn" class="wrk-btn">Workouts</button>
-        <button id="chat-btn" class="chat-btn">Chat</button>
+        <!--<button id="chat-btn" class="chat-btn">Chat</button>-->
     </div>
 
     <!-- Bottom footer -->
