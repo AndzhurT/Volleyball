@@ -1,73 +1,164 @@
-# React + TypeScript + Vite
+# Volleyball Project
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack volleyball application built with React, TypeScript, Vite (frontend) and Express (backend).
 
-Currently, two official plugins are available:
+## 🚀 Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Option 1: Using Docker (Recommended - No Setup Required!)
 
-## React Compiler
+If you have Docker Desktop installed, you can run the entire application with **zero configuration**:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd Volleyball
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start both frontend and backend
+docker compose up --build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+That's it! 🎉
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:5000
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+**What you need:**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker and Docker Compose)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**No need to install:**
+- ❌ Node.js
+- ❌ npm packages
+- ❌ Any dependencies
+
+Everything runs in containers!
+
+### Option 2: Local Development (Without Docker)
+
+If you prefer running the app locally:
+
+**Prerequisites:**
+- Node.js 22.x or higher
+- npm
+
+**Setup:**
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd Volleyball
+
+# Install frontend dependencies
+npm install
+
+# Install backend dependencies
+cd backend
+npm install
+cd ..
 ```
+
+**Run the application:**
+
+```bash
+# Terminal 1 - Start the frontend
+npm run dev
+
+# Terminal 2 - Start the backend
+cd backend
+npm start
+```
+
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:5000
+
+## 📁 Project Structure
+
+```
+Volleyball/
+├── src/                    # Frontend React source code
+├── backend/                # Backend Express server
+│   ├── index.js           # Backend entry point
+│   └── package.json       # Backend dependencies
+├── Dockerfile             # Frontend Docker configuration
+├── docker-compose.yml     # Orchestrates both services
+├── package.json           # Frontend dependencies
+└── vite.config.ts         # Vite configuration
+```
+
+## 🛠️ Available Scripts
+
+### Frontend
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+### Backend
+- `npm start` - Start the Express server
+
+## 🐳 Docker Commands
+
+```bash
+# Start services
+docker compose up
+
+# Start with rebuild
+docker compose up --build
+
+# Run in background (detached mode)
+docker compose up -d
+
+# Stop services
+docker compose down
+
+# View logs
+docker compose logs -f
+
+# Clean rebuild (if you encounter issues)
+docker compose down
+docker system prune -f
+docker compose up --build
+```
+
+## 🔧 Tech Stack
+
+### Frontend
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+
+### Backend
+- Node.js
+- Express
+
+### DevOps
+- Docker
+- Docker Compose
+
+## 📝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📚 Additional Documentation
+
+- [Docker Setup Guide](README.Docker.md) - Detailed Docker documentation
+- [Vite Documentation](https://vite.dev/)
+- [React Documentation](https://react.dev/)
+
+## ⚠️ Troubleshooting
+
+### Port Already in Use
+If you see port errors, make sure no other services are running on ports 5173 or 5000.
+
+### Docker Issues
+See [README.Docker.md](README.Docker.md) for detailed Docker troubleshooting.
+
+### Changes Not Reflected (Docker)
+Rebuild the containers: `docker compose up --build`
+
+## 📄 License
+
+ISC
