@@ -4,6 +4,12 @@
     "service": "frontend",
     "workspaceFolder": "/app",
     "forwardPorts": [5173, 5000],
+    "portsAttributes": {
+        "5173": {
+            "label": "Vite Dev Server",
+            "onAutoForward": "openBrowser"
+        }
+    },
     "postCreateCommand": "npm install --include=dev",
     "customizations": {
         "vscode": {
