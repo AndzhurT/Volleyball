@@ -1,0 +1,13 @@
+{
+    "name": "Volleyball Dev Container",
+    "dockerComposeFile": "../docker-compose.dev.yml",
+    "service": "frontend",
+    "workspaceFolder": "/app",
+    "forwardPorts": [5173, 5000],
+    "postCreateCommand": "npm install",
+    "customizations": {
+        "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+        }
+    }
+}
