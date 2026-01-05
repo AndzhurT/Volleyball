@@ -1,38 +1,35 @@
 # syntax=docker/dockerfile:1
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
 ARG NODE_VERSION=22.21.0
 
 FROM node:${NODE_VERSION}-alpine
 
-# Use production node environment by default.
-ENV NODE_ENV production
+# Set NODE_ENV to development by default (will be overridden in production compose if needed)
+ENV NODE_ENV=development
 
+# Work directory
+WORKDIR /app
 
-WORKDIR /usr/src/app
+# Copy package files first
+COPY package*.json ./
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.npm to speed up subsequent builds.
-# Leverage a bind mounts to package.json and package-lock.json to avoid having to copy them into
-# into this layer.
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+# Install ALL dependencies (including devDependencies like nodemon)
+# This ensures nodemon is available in development without permission issues
+RUN npm install
 
-# Run the application as a non-root user.
-USER node
-
-# Copy the rest of the source files into the image.
+# Copy the rest of the application code
 COPY . .
 
-# Expose the port that the application listens on.
+# Ensure the node_modules directory and its contents are owned by the node user
+# This fixes permission issues when volume mounting in dev
+RUN chown -R node:node /app/node_modules /app
+
+# Switch to non-root user for security
+USER node
+
+# Expose port
 EXPOSE 5000
 
-# Run the application.
-CMD npm start
+# Default command - will be overridden in docker-compose.dev.yml with "npm run dev"
+# In production, you can override with "npm start"
+CMD ["npm", "start"]

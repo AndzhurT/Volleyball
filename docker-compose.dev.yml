@@ -20,8 +20,15 @@ services:
         build:
             context: ./backend
             dockerfile: Dockerfile
+        volumes:
+            - ./backend:/app:cached
+        command: npm run dev
         ports:
             - '5000:5000'
         environment:
             - NODE_ENV=development
+        env_file:
+            - ./backend/.env
         container_name: volleyball-backend
+        depends_on:
+            - frontend
