@@ -2,11 +2,15 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const { connectDB, getDBStatus } = require('./config/db');
+const locationRoutes = require('./routes/locations');
+const authRoutes = require('./routes/auth');
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use('/api/locations', locationRoutes);
+app.use('/api/auth', authRoutes);
 
 const PORT = process.env.PORT || 5000;
 
