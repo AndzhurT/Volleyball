@@ -1,0 +1,19 @@
+{
+    "name": "Volleyball Backend Dev Container",
+    "dockerComposeFile": "../../docker-compose.dev.yml",
+    "service": "backend",
+    "workspaceFolder": "/app",
+    "forwardPorts": [5000],
+    "portsAttributes": {
+        "5000": {
+            "label": "Vite Dev Server",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    "shutdownAction": "none",
+    "customizations": {
+        "vscode": {
+            "extensions": ["ms-azuretools.vscode-docker"]
+        }
+    }
+}

@@ -1,9 +1,9 @@
 {
-    "name": "Volleyball Dev Container",
-    "dockerComposeFile": "../docker-compose.dev.yml",
+    "name": "Volleyball Frontend Dev Container",
+    "dockerComposeFile": "../../docker-compose.dev.yml",
     "service": "frontend",
     "workspaceFolder": "/app",
-    "forwardPorts": [5173, 5000],
+    "forwardPorts": [5173],
     "portsAttributes": {
         "5173": {
             "label": "Vite Dev Server",
