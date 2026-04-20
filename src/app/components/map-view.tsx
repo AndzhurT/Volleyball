@@ -1,45 +1,98 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapPin, Filter, Search, Navigation } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
 import { GameCard, type Game } from "./game-card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+
+interface GameWithCoords extends Game {
+  latitude: number;
+  longitude: number;
+}
 
 interface MapViewProps {
-  games: Game[];
+  games: GameWithCoords[];
   onRSVP: (gameId: string) => void;
   onViewGameDetails: (gameId: string) => void;
 }
 
-export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+const volleyballIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+function FlyToGame({
+  selectedGame,
+}: {
+  selectedGame: GameWithCoords | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (
+      selectedGame &&
+      typeof selectedGame.latitude === "number" &&
+      typeof selectedGame.longitude === "number"
+    ) {
+      map.flyTo([selectedGame.latitude, selectedGame.longitude], 13, {
+        duration: 1.2,
+      });
+    }
+  }, [selectedGame, map]);
+
+  return null;
+}
+
+export function MapView({
+  games,
+  onRSVP,
+  onViewGameDetails,
+}: MapViewProps) {
+  const [selectedGame, setSelectedGame] = useState<GameWithCoords | null>(null);
   const [skillFilter, setSkillFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock map pins for visual representation
-  const mapPins = games.map((game, index) => ({
-    id: game.id,
-    x: 15 + (index * 17) % 70,
-    y: 15 + (index * 23) % 70,
-    game,
-  }));
+  const filteredGames = useMemo(() => {
+    return games.filter((game) => {
+      const matchesSkill =
+        skillFilter === "all" || game.skillLevel === skillFilter;
+      const matchesType = typeFilter === "all" || game.type === typeFilter;
+      const matchesSearch =
+        !searchQuery ||
+        game.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        game.title.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const filteredGames = games.filter((game) => {
-    const matchesSkill = skillFilter === "all" || game.skillLevel === skillFilter;
-    const matchesType = typeFilter === "all" || game.type === typeFilter;
-    const matchesSearch =
-      !searchQuery ||
-      game.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      game.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSkill && matchesType && matchesSearch;
-  });
+      return matchesSkill && matchesType && matchesSearch;
+    });
+  }, [games, skillFilter, typeFilter, searchQuery]);
+
+  const validGames = filteredGames.filter(
+  (game) =>
+    typeof game.latitude === "number" &&
+    typeof game.longitude === "number"
+);
+
+  const defaultCenter: [number, number] =
+    validGames.length > 0
+      ? [validGames[0].latitude, validGames[0].longitude]
+      : [39.9526, -75.1652];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl mb-2">Find Games Near You</h1>
         <p className="text-muted-foreground">
@@ -47,11 +100,10 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
         </p>
       </div>
 
-      {/* Search and Filters */}
       <Card className="p-4 border-2 border-border/30 bg-card">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search by location or game name..."
               value={searchQuery}
@@ -59,7 +111,8 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
               className="pl-10 bg-input-background border-border"
             />
           </div>
-          <div className="flex gap-3">
+
+          <div className="flex gap-3 flex-wrap">
             <Select value={skillFilter} onValueChange={setSkillFilter}>
               <SelectTrigger className="w-[160px] bg-input-background border-border">
                 <SelectValue placeholder="Skill Level" />
@@ -71,6 +124,7 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
                 <SelectItem value="Advanced">Advanced</SelectItem>
               </SelectContent>
             </Select>
+
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-[160px] bg-input-background border-border">
                 <SelectValue placeholder="Game Type" />
@@ -81,6 +135,7 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
                 <SelectItem value="competitive">Competitive</SelectItem>
               </SelectContent>
             </Select>
+
             <Button variant="outline" className="border-border">
               <Filter className="w-4 h-4 mr-2" />
               More Filters
@@ -90,67 +145,64 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
       </Card>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Map Section */}
         <div className="lg:col-span-2">
           <Card className="relative overflow-hidden border-2 border-border/30 bg-card h-[600px]">
-            {/* Map Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-muted/30 via-muted/20 to-muted/10">
-              {/* Grid Pattern */}
-              <div
-                className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(var(--border) 1px, transparent 1px),
-                    linear-gradient(90deg, var(--border) 1px, transparent 1px)
-                  `,
-                  backgroundSize: "40px 40px",
-                }}
+            <MapContainer
+              center={defaultCenter}
+              zoom={11}
+              scrollWheelZoom={true}
+              className="h-full w-full z-0"
+            >
+              <TileLayer
+                attribution='&copy; OpenStreetMap contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              
-              {/* Map Pins */}
-              {mapPins
-                .filter((pin) => filteredGames.some((g) => g.id === pin.game.id))
-                .map((pin) => (
-                  <button
-                    key={pin.id}
-                    onClick={() => setSelectedGame(pin.game)}
-                    className="absolute transform -translate-x-1/2 -translate-y-full group"
-                    style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                  >
-                    <div className="relative">
-                      <MapPin
-                        className={`w-10 h-10 transition-all ${
-                          selectedGame?.id === pin.id
-                            ? "text-secondary scale-125 drop-shadow-lg"
-                            : "text-primary hover:scale-110"
-                        }`}
-                        fill="currentColor"
-                      />
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Badge className="whitespace-nowrap text-xs bg-card text-foreground border-2 border-primary shadow-lg">
-                          {pin.game.title}
-                        </Badge>
+
+              <FlyToGame selectedGame={selectedGame} />
+
+              {validGames.map((game) => (
+                <Marker
+                  key={game.id}
+                  position={[game.latitude, game.longitude]}
+                  icon={volleyballIcon}
+                  eventHandlers={{
+                    click: () => setSelectedGame(game),
+                  }}
+                >
+                  <Popup>
+                    <div className="space-y-2 min-w-[180px]">
+                      <h4 className="font-semibold">{game.title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {game.location}
+                      </p>
+                      <p className="text-sm">
+                        {game.date} • {game.time}
+                      </p>
+                      <p className="text-sm">
+                        Spots left: {game.spotsLeft}
+                      </p>
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={() => onViewGameDetails(game.id)}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRSVP(game.id)}
+                        >
+                          RSVP
+                        </Button>
                       </div>
-                      {pin.game.spotsLeft <= 2 && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full border-2 border-card animate-pulse" />
-                      )}
                     </div>
-                  </button>
-                ))}
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
 
-              {/* Location Indicator */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <div className="absolute w-16 h-16 bg-info/20 rounded-full animate-ping" />
-                  <div className="relative w-8 h-8 bg-info rounded-full border-4 border-card shadow-lg flex items-center justify-center">
-                    <Navigation className="w-4 h-4 text-card" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Map Controls */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
+            <div className="absolute top-4 right-4 z-[1000]">
               <Button
                 size="icon"
                 variant="secondary"
@@ -160,8 +212,7 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
               </Button>
             </div>
 
-            {/* Results Counter */}
-            <div className="absolute bottom-4 left-4">
+            <div className="absolute bottom-4 left-4 z-[1000]">
               <Badge className="bg-card text-foreground border-2 border-border shadow-lg px-4 py-2">
                 {filteredGames.length} games found
               </Badge>
@@ -169,7 +220,6 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
           </Card>
         </div>
 
-        {/* Game Details Sidebar */}
         <div className="space-y-4">
           {selectedGame ? (
             <div className="space-y-4">
@@ -183,6 +233,7 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
                   Clear
                 </Button>
               </div>
+
               <GameCard
                 game={selectedGame}
                 onRSVP={onRSVP}
@@ -211,7 +262,10 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
                         <span>{game.time}</span>
                       </div>
                       {game.distance && (
-                        <Badge variant="outline" className="mt-2 bg-success/10 text-success border-success/20">
+                        <Badge
+                          variant="outline"
+                          className="mt-2 bg-success/10 text-success border-success/20"
+                        >
                           {game.distance}
                         </Badge>
                       )}
