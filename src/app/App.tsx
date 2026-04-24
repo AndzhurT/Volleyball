@@ -1,10 +1,22 @@
 import { useState } from "react";
-import { Home, MapPin, User, Plus, Users, Bell } from "lucide-react";
+import {
+  Home,
+  MapPin,
+  User,
+  Plus,
+  Users,
+  Bell,
+  LogIn,
+} from "lucide-react";
+
 import { Button } from "./components/ui/button";
 import { Dashboard } from "./components/dashboard";
 import { MapView } from "./components/map-view";
 import { ProfileView } from "./components/profile-view";
 import { CreateGameDialog } from "./components/create-game-dialog";
+import { AuthDialog } from "./components/auth-dialog";
+import { PlayersViewOption1 } from "./components/players-view-option1";
+
 import type { Game } from "./components/game-card";
 import type { Player } from "./components/player-card";
 
@@ -241,6 +253,9 @@ const mockGames: GameWithCoords[] = [
     setCurrentView("profile");
   };
 
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [isLoggedIn] = useState(true);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -285,25 +300,40 @@ const mockGames: GameWithCoords[] = [
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Create Game</span>
-              </Button>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
-              </Button>
-              <Button
-                variant={currentView === "profile" ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setCurrentView("profile")}
-                className={currentView === "profile" ? "bg-primary text-primary-foreground" : ""}
-              >
-                <User className="w-5 h-5" />
-              </Button>
+              {isLoggedIn ? (
+                <>
+                  <Button
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Create Game</span>
+                  </Button>
+
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                  </Button>
+
+                  <Button
+                    variant={currentView === "profile" ? "default" : "ghost"}
+                    size="icon"
+                    onClick={() => setCurrentView("profile")}
+                  >
+                    <User className="w-5 h-5" />
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => setIsAuthDialogOpen(true)}>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login / Sign Up
+                </Button>
+              )}
+
+              <AuthDialog
+                open={isAuthDialogOpen}
+                onOpenChange={setIsAuthDialogOpen}
+              />
             </div>
           </div>
         </div>
@@ -340,30 +370,13 @@ const mockGames: GameWithCoords[] = [
           />
         )}
 
-        {currentView === "browse" && (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl mb-2">Discover Players</h1>
-              <p className="text-muted-foreground">
-                Connect with volleyball players in your community
-              </p>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockPlayers.map((player) => (
-                <div key={player.id}>
-                  <div className="mb-4">
-                    <img
-                      src="https://images.unsplash.com/photo-1764254811090-af4a43594a03?w=800&h=400&fit=crop"
-                      alt="Players"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  </div>
-                  {/* Player card will go here */}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {currentView === "browse" && (
+        <PlayersViewOption1
+          players={mockPlayers}
+          onConnect={handleConnect}
+          onViewProfile={handleViewProfile}
+        />
+      )}
       </main>
 
       {/* Create Game Dialog */}

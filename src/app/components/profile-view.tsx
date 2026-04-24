@@ -1,4 +1,4 @@
-import { MapPin, Trophy, Calendar, Settings } from "lucide-react";
+import { MapPin, Trophy, Calendar, Settings, ThumbsUp, Star } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -6,6 +6,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { GameCard, type Game } from "./game-card";
 import { PlayerCard, type Player } from "./player-card";
+import { Textarea } from "./ui/textarea";
+import { useState } from "react";
+
+
+
 
 interface ProfileViewProps {
   isOwnProfile?: boolean;
@@ -14,6 +19,17 @@ interface ProfileViewProps {
     followers: Player[];
     following: Player[];
     achievements: Array<{ title: string; icon: string; date: string }>;
+
+    reviews?: {
+      id: string;
+      reviewerName: string;
+      reviewerAvatar?: string;
+      rating: number;
+      comment: string;
+      date: string;
+      helpfulCount: number;
+    }[];
+
     stats: {
       winRate: number;
       hoursPlayed: number;
@@ -26,6 +42,15 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ isOwnProfile = false, player, onEditProfile, onConnect }: ProfileViewProps) {
+  const [newReview, setNewReview] = useState("");
+  const [newRating, setNewRating] = useState(5);
+
+  const handleSubmitReview = () => {
+    console.log("Submitting review:", { rating: newRating, comment: newReview });
+    setNewReview("");
+    setNewRating(5);
+  };
+
   return (
     <div className="space-y-6">
       {/* Profile Header */}
@@ -143,10 +168,6 @@ export function ProfileView({ isOwnProfile = false, player, onEditProfile, onCon
                 <div className="text-sm text-muted-foreground">Rating</div>
               </div>
               <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <div className="text-2xl font-medium mb-1">{player.stats.winRate}%</div>
-                <div className="text-sm text-muted-foreground">Win Rate</div>
-              </div>
-              <div className="text-center p-4 bg-muted/30 rounded-lg">
                 <div className="text-2xl font-medium mb-1">{player.stats.hoursPlayed}</div>
                 <div className="text-sm text-muted-foreground">Hours</div>
               </div>
@@ -157,9 +178,10 @@ export function ProfileView({ isOwnProfile = false, player, onEditProfile, onCon
 
       {/* Tabs Section */}
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-muted/50">
-          <TabsTrigger value="games">Games</TabsTrigger>
-          <TabsTrigger value="achievements">Achievements</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 bg-muted/50">
+        <TabsTrigger value="games">Games</TabsTrigger>
+        <TabsTrigger value="reviews">Reviews</TabsTrigger>
+        <TabsTrigger value="achievements">Achievements</TabsTrigger>
           <TabsTrigger value="followers">Followers</TabsTrigger>
           <TabsTrigger value="following">Following</TabsTrigger>
         </TabsList>
@@ -176,6 +198,95 @@ export function ProfileView({ isOwnProfile = false, player, onEditProfile, onCon
                   isJoined={true}
                 />
               ))}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reviews" className="space-y-6 mt-6">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl">Player Reviews</h2>
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 fill-warning text-warning" />
+                <span className="text-xl">{player.rating.toFixed(1)}</span>
+                <span className="text-muted-foreground">
+                  ({player.reviews?.length || 0})
+                </span>
+              </div>
+            </div>
+
+            {!isOwnProfile && (
+              <Card className="p-6 mb-6">
+                <h3 className="mb-4">Leave a Review</h3>
+
+                {/* Rating */}
+                <div className="flex gap-2 mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} onClick={() => setNewRating(star)}>
+                      <Star
+                        className={`w-6 h-6 ${
+                          star <= newRating
+                            ? "fill-warning text-warning"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Text */}
+                <Textarea
+                  value={newReview}
+                  onChange={(e) => setNewReview(e.target.value)}
+                  placeholder="Write a review..."
+                />
+
+                <Button
+                  onClick={handleSubmitReview}
+                  disabled={!newReview.trim()}
+                  className="mt-3"
+                >
+                  Submit Review
+                </Button>
+              </Card>
+            )}
+
+            {/* Review List */}
+            <div className="space-y-4">
+              {player.reviews?.length ? (
+                player.reviews.map((review) => (
+                  <Card key={review.id} className="p-4">
+                    <div className="flex justify-between">
+                      <h4>{review.reviewerName}</h4>
+                      <span className="text-sm text-muted-foreground">
+                        {review.date}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-1 my-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= review.rating
+                              ? "fill-warning text-warning"
+                              : "text-muted-foreground"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    <p className="text-muted-foreground">{review.comment}</p>
+
+                    <Button variant="ghost" size="sm" className="mt-2">
+                      <ThumbsUp className="w-4 h-4 mr-1" />
+                      {review.helpfulCount}
+                    </Button>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No reviews yet</p>
+              )}
             </div>
           </div>
         </TabsContent>
