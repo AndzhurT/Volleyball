@@ -254,7 +254,7 @@ const mockGames: GameWithCoords[] = [
   };
 
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
-  const [isLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -333,6 +333,7 @@ const mockGames: GameWithCoords[] = [
               <AuthDialog
                 open={isAuthDialogOpen}
                 onOpenChange={setIsAuthDialogOpen}
+                onAuthSuccess={() => setIsLoggedIn(true)}
               />
             </div>
           </div>

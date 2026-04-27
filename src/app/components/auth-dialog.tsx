@@ -9,10 +9,12 @@ import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAuthSuccess: () => void;
 }
 
-export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
-  const [showPassword, setShowPassword] = useState(false);
+export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProps) {
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupName, setSignupName] = useState("");
@@ -24,6 +26,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     e.preventDefault();
     console.log("Login:", { email: loginEmail, password: loginPassword });
     // Handle login logic here
+    onAuthSuccess();
     onOpenChange(false);
   };
 
@@ -31,6 +34,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     e.preventDefault();
     console.log("Signup:", { name: signupName, email: signupEmail, password: signupPassword });
     // Handle signup logic here
+    onAuthSuccess();
     onOpenChange(false);
   };
 
@@ -80,7 +84,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="login-password"
-                    type={showPassword ? "text" : "password"}
+                    type={showLoginPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -89,10 +93,10 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -196,7 +200,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="signup-password"
-                    type={showPassword ? "text" : "password"}
+                    type={showSignupPassword ? "text" : "password"}
                     placeholder="Create a password"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
@@ -205,10 +209,10 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() => setShowSignupPassword(!showSignupPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -219,7 +223,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="signup-confirm-password"
-                    type={showPassword ? "text" : "password"}
+                    type={showSignupPassword ? "text" : "password"}
                     placeholder="Confirm your password"
                     value={signupConfirmPassword}
                     onChange={(e) => setSignupConfirmPassword(e.target.value)}
