@@ -11,7 +11,7 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET is not set in environment variables');
 
-router.post('/invite-admin', protect, admin, async (req, res) => {
+router.post('/invite-admin', protect, admin, async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email || typeof email !== 'string' || !email.trim()) {
@@ -33,11 +33,11 @@ router.post('/invite-admin', protect, admin, async (req, res) => {
       expiresAt: invite.expiresAt,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 });
 
-router.post('/register', async (req, res) => {
+router.post('/register', async (req, res, next) => {
   try {
     const { username, email, password } = validateRegistrationInput(req.body);
     const adminInviteToken = typeof req.body.adminInviteToken === 'string' ? req.body.adminInviteToken.trim() : null;
@@ -65,11 +65,11 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({ message: 'User created', user: { id: user._id, role: user.role } });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    next(err);
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = validateLoginInput(req.body);
 
@@ -90,7 +90,7 @@ router.post('/login', async (req, res) => {
       user: { id: user._id, username: user.username, role: user.role }
     });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    next(err);
   }
 });
 

@@ -10,6 +10,9 @@ const adminInviteSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
 }, { timestamps: true });
 
+adminInviteSchema.index({ email: 1, token: 1, used: 1 });
+adminInviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 adminInviteSchema.statics.generateToken = function () {
   return crypto.randomBytes(32).toString('hex');
 };

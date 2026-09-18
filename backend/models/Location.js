@@ -55,15 +55,12 @@ const occupancySchema = new mongoose.Schema({
 });
 
 const locationSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    address: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    address: { type: String, required: true, trim: true },
     coordinates: {
         type: { type: String, default: 'Point' },
         coordinates: [Number], // [longitude, latitude]
     },
-    // Geo index for nearby searches
-    // mongoose will handle: locationSchema.index({ coordinates: '2dsphere' });
-
     description: String,
     photos: [String], // URLs
     amenities: [String], // e.g., ["indoor", "showers", "parking"]
@@ -71,9 +68,17 @@ const locationSchema = new mongoose.Schema({
     operatingHours: operatingHoursSchema,
     usualOccupancy: occupancySchema,
 
-    // Other fields...
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
+});
+
+locationSchema.index({ coordinates: '2dsphere' });
+locationSchema.index({ createdAt: -1 });
+locationSchema.index({ name: 'text', address: 'text' });
+
+locationSchema.pre('save', function (next) {
+    this.updatedAt = new Date();
+    next();
 });
 
 module.exports = mongoose.model('Location', locationSchema);
