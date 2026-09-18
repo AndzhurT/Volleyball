@@ -3,9 +3,10 @@ const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
-const { connectDB } = require('./config/db');
 
 dotenv.config();
+
+const { connectDB } = require('./config/db');
 
 if (!process.env.MONGO_URI) {
     throw new Error('MONGO_URI is not set in environment variables');
@@ -62,9 +63,12 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Connect to MongoDB
-connectDB();
+if (require.main === module) {
+    connectDB();
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

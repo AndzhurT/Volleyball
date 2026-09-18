@@ -177,6 +177,14 @@ working after 7 days.
 curl "$BASE_URL/api/locations"
 ```
 
+Optional pagination parameters are available. The default page size is 10 and the maximum is 50:
+
+```bash
+curl "$BASE_URL/api/locations?page=2&limit=20"
+```
+
+The response contains `page`, `limit`, `total`, `totalPages`, and the location array in `data`.
+
 ### Get one location
 
 Replace the ID with a MongoDB location ID returned from the list or create request:

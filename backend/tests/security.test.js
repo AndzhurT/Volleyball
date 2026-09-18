@@ -21,15 +21,25 @@ test('registration rejects user-controlled admin privilege escalation', () => {
 
 test('registration rejects malformed input', () => {
   assert.throws(
-    () => validateRegistrationInput({ username: '', email: 'bad-email', password: 'short' }),
-    /valid/i
+    () => validateRegistrationInput({ username: '', email: 'user@example.com', password: 'StrongPass123' }),
+    /Username must be between 3 and 50 characters/
+  );
+
+  assert.throws(
+    () => validateRegistrationInput({ username: 'alice', email: 'bad-email', password: 'StrongPass123' }),
+    /Email is not valid/
+  );
+
+  assert.throws(
+    () => validateRegistrationInput({ username: 'alice', email: 'alice@example.com', password: 'short' }),
+    /uppercase letter and one number/
   );
 });
 
 test('login requires valid credentials shape', () => {
   assert.throws(
-    () => validateLoginInput({ email: 'bad-email', password: '' }),
-    /valid/i
+    () => validateLoginInput({ email: 'alice@example.com', password: '' }),
+    /Password must be between 1 and 128 characters/
   );
 });
 
