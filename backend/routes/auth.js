@@ -1,28 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
-const AdminInvite = require('../models/AdminInvite');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const User = require('../models/User');
+const AdminInvite = require('../models/AdminInvite');
 const { protect, admin } = require('../middleware/auth');
+const { validateRegistrationInput, validateLoginInput } = require('../utils/validation');
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET is not set in environment variables');
 
-// ADMIN INVITES A NEW ADMIN ("notification")
 router.post('/invite-admin', protect, admin, async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email is required' });
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
 
     const token = AdminInvite.generateToken();
-
     const invite = await AdminInvite.create({
-      email: email.toLowerCase(),
+      email: email.toLowerCase().trim(),
       token,
       invitedBy: req.user.id,
-      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(201).json({
@@ -36,13 +37,12 @@ router.post('/invite-admin', protect, admin, async (req, res) => {
   }
 });
 
-// REGISTER
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, adminInviteToken } = req.body;
-    // Note: 'role' is intentionally NOT read from req.body — never trust client-supplied role.
+    const { username, email, password } = validateRegistrationInput(req.body);
+    const adminInviteToken = typeof req.body.adminInviteToken === 'string' ? req.body.adminInviteToken.trim() : null;
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     let role = 'user';
@@ -59,24 +59,21 @@ router.post('/register', async (req, res) => {
         invite.used = true;
         await invite.save();
       }
-      // If invalid/expired/missing, silently fall back to 'user' —
-      // don't leak whether a token existed/was wrong.
     }
 
     const user = await User.create({ username, email, password, role });
 
     res.status(201).json({ message: 'User created', user: { id: user._id, role: user.role } });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
 
-// LOGIN
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = validateLoginInput(req.body);
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
     const isMatch = await user.comparePassword(password);
@@ -93,7 +90,7 @@ router.post('/login', async (req, res) => {
       user: { id: user._id, username: user.username, role: user.role }
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
 
