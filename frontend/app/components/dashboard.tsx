@@ -66,7 +66,10 @@ export function Dashboard({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" className="bg-card text-foreground hover:bg-card/90">
+            <Button 
+              variant="secondary" 
+              className="bg-card text-foreground hover:bg-card/90"
+              >
               <Calendar className="w-4 h-4 mr-2" />
               View Calendar
             </Button>

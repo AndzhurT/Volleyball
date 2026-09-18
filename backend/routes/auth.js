@@ -1,23 +1,69 @@
-// routes/auth.js
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const AdminInvite = require('../models/AdminInvite');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const { protect, admin } = require('../middleware/auth');
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key'; // Put in .env!
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET is not set in environment variables');
 
-// REGISTER (for creating first admin)
+// ADMIN INVITES A NEW ADMIN ("notification")
+router.post('/invite-admin', protect, admin, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const token = AdminInvite.generateToken();
+
+    const invite = await AdminInvite.create({
+      email: email.toLowerCase(),
+      token,
+      invitedBy: req.user.id,
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.status(201).json({
+      message: 'Admin invite created',
+      email: invite.email,
+      inviteToken: token,
+      expiresAt: invite.expiresAt,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// REGISTER
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, email, password, adminInviteToken } = req.body;
+    // Note: 'role' is intentionally NOT read from req.body — never trust client-supplied role.
 
-    // Only allow creating admin if no users exist yet (or add admin check later)
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ username, email, password, role: role || 'user' });
+    let role = 'user';
+
+    if (adminInviteToken) {
+      const invite = await AdminInvite.findOne({
+        email: email.toLowerCase(),
+        token: adminInviteToken,
+        used: false,
+      });
+
+      if (invite && invite.expiresAt > Date.now()) {
+        role = 'admin';
+        invite.used = true;
+        await invite.save();
+      }
+      // If invalid/expired/missing, silently fall back to 'user' —
+      // don't leak whether a token existed/was wrong.
+    }
+
+    const user = await User.create({ username, email, password, role });
 
     res.status(201).json({ message: 'User created', user: { id: user._id, role: user.role } });
   } catch (err) {

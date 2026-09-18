@@ -18,7 +18,8 @@ MONGO_URI=mongodb://127.0.0.1:27017/volleyball
 JWT_SECRET=replace-this-with-a-long-random-secret
 ```
 
-`MONGO_URI` and `JWT_SECRET` are required for a useful deployment. Keep `.env` out of source control.
+`MONGO_URI` and `JWT_SECRET` are required for a useful deployment. `JWT_SECRET` has no
+fallback value — the server refuses to start without it. Keep `.env` out of source control.
 
 ## Running locally
 
@@ -46,8 +47,9 @@ docker compose up --build
 | Method | Endpoint | Authentication | Description |
 | --- | --- | --- | --- |
 | GET | `/` | None | API welcome message |
-| POST | `/api/auth/register` | None | Create a user |
+| POST | `/api/auth/register` | None | Create a user (admin only via a valid invite token) |
 | POST | `/api/auth/login` | None | Authenticate and receive a JWT |
+| POST | `/api/auth/invite-admin` | Admin JWT | Generate a one-time invite token for a new admin |
 | GET | `/api/locations` | None | List all locations |
 | GET | `/api/locations/:id` | None | Get one location |
 | POST | `/api/locations` | Admin JWT | Create a location |
@@ -58,6 +60,30 @@ Protected requests use this header:
 ```text
 Authorization: Bearer <token>
 ```
+
+## Admin registration flow
+
+Registration no longer accepts a client-supplied `role`. New accounts are always created
+as `user` unless the request includes a valid `adminInviteToken`.
+
+Admin accounts are granted through an invite:
+
+1. An existing admin calls `POST /api/auth/invite-admin` with the invitee's email.
+2. The response includes a one-time `inviteToken`, valid for 7 days. Deliver this to the
+   invitee out-of-band (email, in-app notification, etc. — not implemented here).
+3. The invitee registers via `POST /api/auth/register`, including that token as
+   `adminInviteToken` along with the **same email** the invite was issued to.
+4. If the token is valid, unused, unexpired, and the email matches, the new account is
+   created with `role: "admin"`. Otherwise the account is silently created as a normal
+   `user` — the API does not reveal whether a token was wrong, expired, or missing.
+
+### Bootstrapping the first admin
+
+`invite-admin` requires an existing admin, which creates a chicken-and-egg problem for
+the very first admin account. Handle this out of band, for example by inserting a user
+document directly into MongoDB with `role: "admin"`, or by temporarily adding a
+one-time server-side bootstrap path. Remove any bootstrap shortcut before deploying
+publicly.
 
 ## Example curl requests
 
@@ -91,22 +117,7 @@ curl -X POST "$BASE_URL/api/auth/register" \
   }'
 ```
 
-The response contains the new user's ID and role.
-
-### Register an admin for local testing
-
-The current implementation accepts a `role` field during registration. This is useful for testing the admin-only endpoints, but it is not safe for public production use because an unauthenticated caller can request the `admin` role.
-
-```bash
-curl -X POST "$BASE_URL/api/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "local-admin",
-    "email": "local-admin@example.com",
-    "password": "change-this-password",
-    "role": "admin"
-  }'
-```
+The response contains the new user's ID and role (`user`, since no invite token was sent).
 
 ### Log in
 
@@ -124,6 +135,41 @@ Copy the `token` value from the response and set it in your shell:
 ```bash
 TOKEN='paste-jwt-token-here'
 ```
+
+### Invite a new admin (requires an existing admin token)
+
+```bash
+curl -X POST "$BASE_URL/api/auth/invite-admin" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "email": "new-admin@example.com"
+  }'
+```
+
+The response includes `inviteToken`. Save it:
+
+```bash
+INVITE_TOKEN='paste-invite-token-here'
+```
+
+### Register the invited admin
+
+The email must match exactly what the invite was issued to.
+
+```bash
+curl -X POST "$BASE_URL/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "new-admin",
+    "email": "new-admin@example.com",
+    "password": "change-this-password",
+    "adminInviteToken": "'"$INVITE_TOKEN"'"
+  }'
+```
+
+The response should show `"role": "admin"`. The token can't be reused, and it stops
+working after 7 days.
 
 ### List locations
 
@@ -180,7 +226,11 @@ curl -X DELETE "$BASE_URL/api/locations/LOCATION_ID" \
 
 - Location reads are public; creating and deleting locations requires an admin JWT.
 - JWTs expire after seven days.
+- Admin invite tokens expire after seven days and can only be used once.
+- There is currently no mechanism for delivering invite tokens to the invitee (e.g.
+  email) — the token is returned directly in the `invite-admin` API response and must
+  be relayed out of band.
 - There is currently no pagination, rate limiting, request size limit, or API health endpoint.
-- Registration currently allows the caller to select `role: "admin"`; restrict or remove this before exposing the API publicly.
-- Do not rely on the JWT fallback secret in [middleware/auth.js](middleware/auth.js) or [routes/auth.js](routes/auth.js); provide a strong `JWT_SECRET` in every environment.
+- `JWT_SECRET` has no fallback and must be set in every environment, or the server will
+  refuse to start.
 - `npm test` is currently a placeholder and does not run automated tests.
