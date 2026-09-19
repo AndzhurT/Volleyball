@@ -10,13 +10,15 @@ A Node.js, Express, and MongoDB backend for managing volleyball locations.
 
 ## Configuration
 
-Create a `.env` file in the project root:
+Create a `.env` file in the `backend` directory:
 
 ```env
 PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/volleyball
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>
 JWT_SECRET=replace-this-with-a-long-random-secret
 ```
+
+Replace `MONGO_URI` with the URI for your separately hosted MongoDB instance.
 
 `MONGO_URI` and `JWT_SECRET` are required for a useful deployment. `JWT_SECRET` has no
 fallback value — the server refuses to start without it. Keep `.env` out of source control.
@@ -36,7 +38,8 @@ npm run dev
 
 ## Running with Docker Compose
 
-The current Compose file builds the API container and exposes port `5000`. MongoDB is expected to be available separately, and the container must receive `MONGO_URI` and `JWT_SECRET` through its environment or deployment secret manager.
+The root Compose files start the API and load `MONGO_URI` and `JWT_SECRET` from
+`backend/.env`. MongoDB is expected to be hosted separately.
 
 ```bash
 docker compose up --build
@@ -44,16 +47,16 @@ docker compose up --build
 
 ## API overview
 
-| Method | Endpoint | Authentication | Description |
-| --- | --- | --- | --- |
-| GET | `/` | None | API welcome message |
-| POST | `/api/auth/register` | None | Create a user (admin only via a valid invite token) |
-| POST | `/api/auth/login` | None | Authenticate and receive a JWT |
-| POST | `/api/auth/invite-admin` | Admin JWT | Generate a one-time invite token for a new admin |
-| GET | `/api/locations` | None | List all locations |
-| GET | `/api/locations/:id` | None | Get one location |
-| POST | `/api/locations` | Admin JWT | Create a location |
-| DELETE | `/api/locations/:id` | Admin JWT | Delete a location |
+| Method | Endpoint                 | Authentication | Description                                         |
+| ------ | ------------------------ | -------------- | --------------------------------------------------- |
+| GET    | `/`                      | None           | API welcome message                                 |
+| POST   | `/api/auth/register`     | None           | Create a user (admin only via a valid invite token) |
+| POST   | `/api/auth/login`        | None           | Authenticate and receive a JWT                      |
+| POST   | `/api/auth/invite-admin` | Admin JWT      | Generate a one-time invite token for a new admin    |
+| GET    | `/api/locations`         | None           | List all locations                                  |
+| GET    | `/api/locations/:id`     | None           | Get one location                                    |
+| POST   | `/api/locations`         | Admin JWT      | Create a location                                   |
+| DELETE | `/api/locations/:id`     | Admin JWT      | Delete a location                                   |
 
 Protected requests use this header:
 

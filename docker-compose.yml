@@ -1,23 +1,24 @@
 version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
-    environment:
-      - NODE_ENV=production
-    container_name: volleyball-frontend
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - '5173:5173'
+        environment:
+            - NODE_ENV=production
+        container_name: volleyball-frontend
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-    environment:
-      - NODE_ENV=production
-    container_name: volleyball-backend
-
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        ports:
+            - '5000:5000'
+        environment:
+            - NODE_ENV=production
+        env_file:
+            - ./backend/.env
+        container_name: volleyball-backend

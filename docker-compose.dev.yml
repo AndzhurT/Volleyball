@@ -10,6 +10,8 @@ services:
             - /app/node_modules
             - /app/dist
         command: npm run dev
+        depends_on:
+            - backend
         ports:
             - '5173:5173'
         environment:
@@ -30,5 +32,3 @@ services:
         env_file:
             - ./backend/.env
         container_name: volleyball-backend
-        depends_on:
-            - frontend
