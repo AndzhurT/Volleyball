@@ -57,6 +57,17 @@ export function logout(token: string) {
     return request<{ message: string }>('/api/auth/logout', { method: 'POST' }, token);
 }
 
+export function exchangeOAuthCode(code: string) {
+    return request<AuthResponse>('/api/auth/oauth/exchange', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+    });
+}
+
+export function getOAuthUrl(provider: 'google' | 'facebook') {
+    return `${API_URL}/api/auth/oauth/${provider}`;
+}
+
 export function register(username: string, email: string, password: string) {
     return request<{ message: string; user: { id: string; role: AuthUser['role'] } }>('/api/auth/register', {
         method: 'POST',

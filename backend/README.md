@@ -16,9 +16,21 @@ Create a `.env` file in the `backend` directory:
 PORT=5000
 MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>
 JWT_SECRET=replace-this-with-a-long-random-secret
+FRONTEND_URL=http://localhost:5173
+GOOGLE_CLIENT_ID=replace-this
+GOOGLE_CLIENT_SECRET=replace-this
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/oauth/google/callback
+FACEBOOK_CLIENT_ID=replace-this
+FACEBOOK_CLIENT_SECRET=replace-this
+FACEBOOK_REDIRECT_URI=http://localhost:5000/api/auth/oauth/facebook/callback
 ```
 
 Replace `MONGO_URI` with the URI for your separately hosted MongoDB instance.
+OAuth variables are optional. Google and Facebook login remain unavailable until the
+corresponding provider application is configured with the exact redirect URI above.
+Provider identities are stored separately from local credentials. If a provider returns
+an email already used by a local account, login stops with an account-linking error rather
+than silently merging the accounts.
 
 `MONGO_URI` and `JWT_SECRET` are required for a useful deployment. `JWT_SECRET` has no
 fallback value — the server refuses to start without it. Keep `.env` out of source control.
@@ -47,18 +59,21 @@ docker compose up --build
 
 ## API overview
 
-| Method | Endpoint                 | Authentication | Description                                         |
-| ------ | ------------------------ | -------------- | --------------------------------------------------- |
-| GET    | `/`                      | None           | API welcome message                                 |
-| POST   | `/api/auth/register`     | None           | Create a user (admin only via a valid invite token) |
-| POST   | `/api/auth/login`        | None           | Authenticate and receive a JWT                      |
-| GET    | `/api/auth/me`           | User JWT       | Return the currently authenticated user             |
-| POST   | `/api/auth/logout`       | User JWT       | Acknowledge client logout                           |
-| POST   | `/api/auth/invite-admin` | Admin JWT      | Generate a one-time invite token for a new admin    |
-| GET    | `/api/locations`         | None           | List all locations                                  |
-| GET    | `/api/locations/:id`     | None           | Get one location                                    |
-| POST   | `/api/locations`         | Admin JWT      | Create a location                                   |
-| DELETE | `/api/locations/:id`     | Admin JWT      | Delete a location                                   |
+| Method | Endpoint                   | Authentication | Description                                         |
+| ------ | -------------------------- | -------------- | --------------------------------------------------- |
+| GET    | `/`                        | None           | API welcome message                                 |
+| POST   | `/api/auth/register`       | None           | Create a user (admin only via a valid invite token) |
+| POST   | `/api/auth/login`          | None           | Authenticate and receive a JWT                      |
+| GET    | `/api/auth/me`             | User JWT       | Return the currently authenticated user             |
+| POST   | `/api/auth/logout`         | User JWT       | Acknowledge client logout                           |
+| GET    | `/api/auth/oauth/google`   | None           | Start Google OAuth login                            |
+| GET    | `/api/auth/oauth/facebook` | None           | Start Facebook OAuth login                          |
+| POST   | `/api/auth/oauth/exchange` | None           | Exchange a one-time OAuth callback code             |
+| POST   | `/api/auth/invite-admin`   | Admin JWT      | Generate a one-time invite token for a new admin    |
+| GET    | `/api/locations`           | None           | List all locations                                  |
+| GET    | `/api/locations/:id`       | None           | Get one location                                    |
+| POST   | `/api/locations`           | Admin JWT      | Create a location                                   |
+| DELETE | `/api/locations/:id`       | Admin JWT      | Delete a location                                   |
 
 Protected requests use this header:
 
