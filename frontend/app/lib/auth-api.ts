@@ -9,17 +9,22 @@ interface AuthResponse {
     user: AuthUser;
 }
 
+interface CurrentUserResponse {
+    user: AuthUser;
+}
+
 interface ApiErrorResponse {
     message?: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
-async function request<T>(path: string, options: RequestInit): Promise<T> {
+async function request<T>(path: string, options: RequestInit, token?: string): Promise<T> {
     const response = await fetch(`${API_URL}${path}`, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...(options.headers || {}),
         },
     });
@@ -44,6 +49,14 @@ export function login(email: string, password: string) {
     });
 }
 
+export function getCurrentUser(token: string) {
+    return request<CurrentUserResponse>('/api/auth/me', { method: 'GET' }, token);
+}
+
+export function logout(token: string) {
+    return request<{ message: string }>('/api/auth/logout', { method: 'POST' }, token);
+}
+
 export function register(username: string, email: string, password: string) {
     return request<{ message: string; user: { id: string; role: AuthUser['role'] } }>('/api/auth/register', {
         method: 'POST',
@@ -60,4 +73,9 @@ export function storeAuthToken(token: string, rememberMe: boolean) {
 
 export function getStoredAuthToken() {
     return localStorage.getItem('volleyconnect.authToken') || sessionStorage.getItem('volleyconnect.authToken');
+}
+
+export function clearStoredAuthToken() {
+    localStorage.removeItem('volleyconnect.authToken');
+    sessionStorage.removeItem('volleyconnect.authToken');
 }

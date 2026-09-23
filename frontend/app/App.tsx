@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, MapPin, User, Plus, Users, Bell, LogIn } from 'lucide-react';
+import { Home, MapPin, User, Plus, Users, Bell, LogIn, LogOut } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Dashboard } from './components/dashboard';
@@ -8,7 +8,7 @@ import { ProfileView } from './components/profile-view';
 import { CreateGameDialog } from './components/create-game-dialog';
 import { AuthDialog } from './components/auth-dialog';
 import { PlayersViewOption1 } from './components/players-view-option1';
-import type { AuthUser } from './lib/auth-api';
+import { useAuth } from './context/AuthContext';
 
 import type { Game } from './components/game-card';
 import type { Player } from './components/player-card';
@@ -23,7 +23,7 @@ type GameWithCoords = Game & {
 function App() {
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+    const { user: authUser, isLoading: isAuthLoading, setAuthenticatedUser, logout } = useAuth();
 
     // Mock Data
     const mockGames: GameWithCoords[] = [
@@ -291,7 +291,7 @@ function App() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2">
-                            {isLoggedIn ? (
+                            {isAuthLoading ? null : isLoggedIn ? (
                                 <>
                                     <Button
                                         onClick={() => setIsCreateDialogOpen(true)}
@@ -311,6 +311,13 @@ function App() {
                                         onClick={() => setCurrentView('profile')}>
                                         <User className="w-5 h-5" />
                                     </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => void logout()}
+                                        aria-label="Log out">
+                                        <LogOut className="w-5 h-5" />
+                                    </Button>
                                 </>
                             ) : (
                                 <Button onClick={() => setIsAuthDialogOpen(true)}>
@@ -322,7 +329,7 @@ function App() {
                             <AuthDialog
                                 open={isAuthDialogOpen}
                                 onOpenChange={setIsAuthDialogOpen}
-                                onAuthSuccess={setAuthUser}
+                                onAuthSuccess={setAuthenticatedUser}
                             />
                         </div>
                     </div>

@@ -52,6 +52,8 @@ docker compose up --build
 | GET    | `/`                      | None           | API welcome message                                 |
 | POST   | `/api/auth/register`     | None           | Create a user (admin only via a valid invite token) |
 | POST   | `/api/auth/login`        | None           | Authenticate and receive a JWT                      |
+| GET    | `/api/auth/me`           | User JWT       | Return the currently authenticated user             |
+| POST   | `/api/auth/logout`       | User JWT       | Acknowledge client logout                           |
 | POST   | `/api/auth/invite-admin` | Admin JWT      | Generate a one-time invite token for a new admin    |
 | GET    | `/api/locations`         | None           | List all locations                                  |
 | GET    | `/api/locations/:id`     | None           | Get one location                                    |
