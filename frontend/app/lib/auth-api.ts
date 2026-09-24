@@ -2,6 +2,7 @@ export interface AuthUser {
     id: string;
     username: string;
     role: 'user' | 'admin';
+    emailVerified?: boolean;
 }
 
 interface AuthResponse {
@@ -11,6 +12,13 @@ interface AuthResponse {
 
 interface CurrentUserResponse {
     user: AuthUser;
+}
+
+interface GenericMessageResponse {
+    message: string;
+    verificationToken?: string;
+    resetToken?: string;
+    emailVerified?: boolean;
 }
 
 interface ApiErrorResponse {
@@ -69,9 +77,40 @@ export function getOAuthUrl(provider: 'google' | 'facebook') {
 }
 
 export function register(username: string, email: string, password: string) {
-    return request<{ message: string; user: { id: string; role: AuthUser['role'] } }>('/api/auth/register', {
+    return request<{ message: string; user: { id: string; role: AuthUser['role']; emailVerified?: boolean } }>(
+        '/api/auth/register',
+        {
+            method: 'POST',
+            body: JSON.stringify({ username, email, password }),
+        },
+    );
+}
+
+export function requestEmailVerification(email: string) {
+    return request<GenericMessageResponse>('/api/auth/request-verification', {
         method: 'POST',
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ email }),
+    });
+}
+
+export function verifyEmail(token: string) {
+    return request<{ message: string; user: AuthUser }>('/api/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+    });
+}
+
+export function requestPasswordReset(email: string) {
+    return request<GenericMessageResponse>('/api/auth/request-password-reset', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+    });
+}
+
+export function resetPassword(token: string, password: string) {
+    return request<{ message: string; user?: AuthUser }>('/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
     });
 }
 

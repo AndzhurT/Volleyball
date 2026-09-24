@@ -8,7 +8,13 @@ const AdminInvite = require('../models/AdminInvite');
 const AuthIdentity = require('../models/AuthIdentity');
 const OAuthLogin = require('../models/OAuthLogin');
 const { protect, admin } = require('../middleware/auth');
-const { validateRegistrationInput, validateLoginInput } = require('../utils/validation');
+const {
+    validateRegistrationInput,
+    validateLoginInput,
+    validateEmailRequestInput,
+    validateVerificationTokenInput,
+    validatePasswordResetInput,
+} = require('../utils/validation');
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -60,11 +66,27 @@ function clearStateCookie(res, provider) {
 }
 
 function createSessionToken(user) {
-    return jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    return jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+        expiresIn: '7d',
+        jwtid: crypto.randomBytes(16).toString('hex'),
+    });
 }
 
 function hashCode(code) {
     return crypto.createHash('sha256').update(code).digest('hex');
+}
+
+function createSecureToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+function getUserPublicProfile(user) {
+    return {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        emailVerified: !!user.emailVerified,
+    };
 }
 
 async function exchangeProviderCode(provider, code, config) {
@@ -123,8 +145,112 @@ async function createOAuthUser(profile) {
         username = `${baseUsername.slice(0, 44)}${suffix}`;
         suffix += 1;
     }
-    return User.create({ username, email: profile.email });
+    return User.create({ username, email: profile.email, emailVerified: true });
 }
+
+router.post('/request-verification', async (req, res, next) => {
+    try {
+        const { email } = validateEmailRequestInput(req.body);
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.json({ message: 'If that account exists, a verification email has been sent.' });
+        }
+
+        if (user.emailVerified) {
+            return res.json({ message: 'This email address is already verified.', emailVerified: true });
+        }
+
+        const verificationToken = createSecureToken();
+        user.emailVerificationToken = hashCode(verificationToken);
+        user.emailVerificationExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+        await user.save();
+
+        res.json({
+            message: 'Verification email sent.',
+            emailVerified: false,
+            verificationToken,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/verify-email', async (req, res, next) => {
+    try {
+        const { token } = validateVerificationTokenInput(req.body);
+        const user = await User.findOne({
+            emailVerificationToken: hashCode(token),
+            emailVerificationExpiresAt: { $gt: new Date() },
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Verification token is invalid or expired.' });
+        }
+
+        user.emailVerified = true;
+        user.emailVerificationToken = null;
+        user.emailVerificationExpiresAt = null;
+        await user.save();
+
+        res.json({
+            message: 'Email verified successfully.',
+            user: getUserPublicProfile(user),
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/request-password-reset', async (req, res, next) => {
+    try {
+        const { email } = validateEmailRequestInput(req.body);
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.json({ message: 'If that account exists, a password reset link has been sent.' });
+        }
+
+        const resetToken = createSecureToken();
+        user.passwordResetToken = hashCode(resetToken);
+        user.passwordResetExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        await user.save();
+
+        res.json({
+            message: 'Password reset email sent.',
+            resetToken,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/reset-password', async (req, res, next) => {
+    try {
+        const { token, password } = validatePasswordResetInput(req.body);
+        const user = await User.findOne({
+            passwordResetToken: hashCode(token),
+            passwordResetExpiresAt: { $gt: new Date() },
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Password reset token is invalid or expired.' });
+        }
+
+        user.password = password;
+        user.passwordResetToken = null;
+        user.passwordResetExpiresAt = null;
+        user.emailVerified = true;
+        await user.save();
+
+        res.json({
+            message: 'Password updated successfully.',
+            user: getUserPublicProfile(user),
+        });
+    } catch (err) {
+        next(err);
+    }
+});
 
 router.get('/oauth/:provider', (req, res, next) => {
     try {
@@ -176,6 +302,8 @@ router.get('/oauth/:provider/callback', async (req, res, next) => {
         } else {
             const existingUser = await User.findOne({ email: profile.email });
             if (existingUser) {
+                existingUser.emailVerified = true;
+                await existingUser.save();
                 identity = await AuthIdentity.create({
                     userId: existingUser._id,
                     provider,
@@ -216,7 +344,7 @@ router.post('/oauth/exchange', async (req, res, next) => {
         if (!handoff || !handoff.userId) return res.status(401).json({ message: 'OAuth code is invalid or expired' });
 
         const user = handoff.userId;
-        res.json({ token: createSessionToken(user), user: { id: user._id, username: user.username, role: user.role } });
+        res.json({ token: createSessionToken(user), user: getUserPublicProfile(user) });
     } catch (err) {
         next(err);
     }
@@ -254,7 +382,9 @@ router.post('/register', async (req, res, next) => {
         const adminInviteToken =
             typeof req.body.adminInviteToken === 'string' ? req.body.adminInviteToken.trim() : null;
 
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        const existingUser = await User.findOne({
+            $or: [{ email: email.toLowerCase() }, { username }],
+        });
         if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
         let role = 'user';
@@ -273,9 +403,12 @@ router.post('/register', async (req, res, next) => {
             }
         }
 
-        const user = await User.create({ username, email, password, role });
+        const user = await User.create({ username, email, password, role, emailVerified: false });
 
-        res.status(201).json({ message: 'User created', user: { id: user._id, role: user.role } });
+        res.status(201).json({
+            message: 'User created',
+            user: getUserPublicProfile(user),
+        });
     } catch (err) {
         next(err);
     }
@@ -295,8 +428,19 @@ router.post('/login', async (req, res, next) => {
 
         res.json({
             token,
-            user: { id: user._id, username: user.username, role: user.role },
+            user: getUserPublicProfile(user),
         });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/refresh', protect, async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select('_id username role emailVerified');
+        if (!user) return res.status(401).json({ message: 'User account not found' });
+
+        res.json({ token: createSessionToken(user), user: getUserPublicProfile(user) });
     } catch (err) {
         next(err);
     }
@@ -304,11 +448,11 @@ router.post('/login', async (req, res, next) => {
 
 router.get('/me', protect, async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id).select('_id username role');
+        const user = await User.findById(req.user.id).select('_id username role emailVerified');
         if (!user) return res.status(401).json({ message: 'User account not found' });
 
         res.json({
-            user: { id: user._id, username: user.username, role: user.role },
+            user: getUserPublicProfile(user),
         });
     } catch (err) {
         next(err);

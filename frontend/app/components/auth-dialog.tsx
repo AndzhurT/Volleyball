@@ -5,7 +5,15 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
-import { getOAuthUrl, login, register, storeAuthToken, type AuthUser } from '../lib/auth-api';
+import {
+    getOAuthUrl,
+    login,
+    register,
+    requestEmailVerification,
+    requestPasswordReset,
+    storeAuthToken,
+    type AuthUser,
+} from '../lib/auth-api';
 
 interface AuthDialogProps {
     open: boolean;
@@ -25,6 +33,9 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
     const [rememberMe, setRememberMe] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [resetEmail, setResetEmail] = useState('');
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
 
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
@@ -46,6 +57,7 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
     const handleSignup = async (e: FormEvent) => {
         e.preventDefault();
         setErrorMessage('');
+        setSuccessMessage('');
 
         if (signupPassword !== signupConfirmPassword) {
             setErrorMessage('Passwords do not match.');
@@ -56,6 +68,8 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
 
         try {
             await register(signupName, signupEmail, signupPassword);
+            await requestEmailVerification(signupEmail);
+            setSuccessMessage('Account created. A verification email request was sent.');
             const response = await login(signupEmail, signupPassword);
             storeAuthToken(response.token, rememberMe);
             onAuthSuccess(response.user);
@@ -64,6 +78,27 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
             setErrorMessage(error instanceof Error ? error.message : 'Unable to create your account.');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handlePasswordReset = async (email: string) => {
+        setErrorMessage('');
+        setSuccessMessage('');
+        if (!email.trim()) {
+            setErrorMessage('Please enter the email address associated with your account.');
+            return;
+        }
+
+        setIsResettingPassword(true);
+
+        try {
+            await requestPasswordReset(email.trim());
+            setSuccessMessage('If that account exists, a password reset link has been sent.');
+            setResetEmail('');
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Unable to send the reset email.');
+        } finally {
+            setIsResettingPassword(false);
         }
     };
 
@@ -87,6 +122,13 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
                         role="alert"
                         className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                         {errorMessage}
+                    </div>
+                )}
+                {successMessage && (
+                    <div
+                        role="status"
+                        className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">
+                        {successMessage}
                     </div>
                 )}
 
@@ -151,8 +193,21 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
                                     />
                                     <span className="text-muted-foreground">Remember me</span>
                                 </label>
-                                <button type="button" className="text-primary hover:underline" disabled>
-                                    Forgot password?
+                                <button
+                                    type="button"
+                                    className="text-primary hover:underline"
+                                    onClick={() => {
+                                        setSuccessMessage('');
+                                        setErrorMessage('');
+                                        const email = loginEmail || resetEmail;
+                                        if (!email.trim()) {
+                                            setErrorMessage('Enter your email first, then request a password reset.');
+                                            return;
+                                        }
+                                        setResetEmail(email);
+                                        void handlePasswordReset(email);
+                                    }}>
+                                    {isResettingPassword ? 'Sending reset link...' : 'Forgot password?'}
                                 </button>
                             </div>
 
