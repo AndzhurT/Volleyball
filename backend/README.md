@@ -64,6 +64,7 @@ docker compose up --build
 | GET    | `/`                        | None           | API welcome message                                 |
 | POST   | `/api/auth/register`       | None           | Create a user (admin only via a valid invite token) |
 | POST   | `/api/auth/login`          | None           | Authenticate and receive a JWT                      |
+| POST   | `/api/auth/refresh`        | User JWT       | Issue a refreshed session JWT                       |
 | GET    | `/api/auth/me`             | User JWT       | Return the currently authenticated user             |
 | POST   | `/api/auth/logout`         | User JWT       | Acknowledge client logout                           |
 | GET    | `/api/auth/oauth/google`   | None           | Start Google OAuth login                            |
