@@ -26,6 +26,7 @@ interface ApiErrorResponse {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || '';
+let inMemoryAuthToken: string | null = null;
 
 async function request<T>(path: string, options: RequestInit, token?: string): Promise<T> {
     const response = await fetch(`${API_URL}${path}`, {
@@ -115,17 +116,24 @@ export function resetPassword(token: string, password: string) {
 }
 
 export function storeAuthToken(token: string, rememberMe: boolean) {
-    const storage = rememberMe ? localStorage : sessionStorage;
-    const otherStorage = rememberMe ? sessionStorage : localStorage;
-    otherStorage.removeItem('volleyconnect.authToken');
-    storage.setItem('volleyconnect.authToken', token);
+    sessionStorage.removeItem('volleyconnect.authToken');
+
+    if (rememberMe) {
+        inMemoryAuthToken = null;
+        localStorage.setItem('volleyconnect.authToken', token);
+        return;
+    }
+
+    localStorage.removeItem('volleyconnect.authToken');
+    inMemoryAuthToken = token;
 }
 
 export function getStoredAuthToken() {
-    return localStorage.getItem('volleyconnect.authToken') || sessionStorage.getItem('volleyconnect.authToken');
+    return localStorage.getItem('volleyconnect.authToken') || inMemoryAuthToken;
 }
 
 export function clearStoredAuthToken() {
     localStorage.removeItem('volleyconnect.authToken');
     sessionStorage.removeItem('volleyconnect.authToken');
+    inMemoryAuthToken = null;
 }
