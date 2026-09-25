@@ -6,6 +6,9 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 
 interface DashboardProps {
+    isLoggedIn: boolean;
+    username?: string;
+    onLogin: () => void;
     upcomingGames: Game[];
     nearbyGames: Game[];
     suggestedPlayers: Player[];
@@ -16,6 +19,9 @@ interface DashboardProps {
 }
 
 export function Dashboard({
+    isLoggedIn,
+    username,
+    onLogin,
     upcomingGames,
     nearbyGames,
     suggestedPlayers,
@@ -32,52 +38,65 @@ export function Dashboard({
 
     return (
         <div className="space-y-8">
-            {/* Welcome Section with Stats */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-secondary p-8 text-primary-foreground">
-                <div className="relative z-10">
-                    <h1 className="text-3xl mb-2">Welcome back, Alex! 👋</h1>
-                    <p className="text-primary-foreground/80 mb-6">
-                        You have {upcomingGames.length} upcoming games and {nearbyGames.length} new games in your area
-                    </p>
+            {isLoggedIn ? (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-secondary p-8 text-primary-foreground">
+                    <div className="relative z-10">
+                        <h1 className="text-3xl mb-2">Welcome back{username ? `, ${username}` : ''}!</h1>
+                        <p className="text-primary-foreground/80 mb-6">
+                            You have {upcomingGames.length} upcoming games and {nearbyGames.length} new games in your
+                            area
+                        </p>
 
-                    {/* Stats inside header */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                        {stats.map((stat, index) => {
-                            const Icon = stat.icon;
-                            return (
-                                <div
-                                    key={index}
-                                    className="bg-primary-foreground/10 backdrop-blur-sm border-2 border-primary-foreground/20 rounded-lg p-4 hover:bg-primary-foreground/15 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg bg-primary-foreground/20 ${stat.color}`}>
-                                            <Icon className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <div className="text-2xl">{stat.value}</div>
-                                            <div className="text-sm text-primary-foreground/70">{stat.label}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                            {stats.map((stat) => {
+                                const Icon = stat.icon;
+                                return (
+                                    <div
+                                        key={stat.label}
+                                        className="bg-primary-foreground/10 backdrop-blur-sm border-2 border-primary-foreground/20 rounded-lg p-4 hover:bg-primary-foreground/15 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg bg-primary-foreground/20 ${stat.color}`}>
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="text-2xl">{stat.value}</div>
+                                                <div className="text-sm text-primary-foreground/70">{stat.label}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
 
-                    <div className="flex flex-wrap gap-3">
-                        <Button variant="secondary" className="bg-card text-foreground hover:bg-card/90">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            View Calendar
-                        </Button>
-                        <Button variant="secondary" className="bg-card text-foreground hover:bg-card/90">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            Find Games Nearby
-                        </Button>
+                        <div className="flex flex-wrap gap-3">
+                            <Button variant="secondary" className="bg-card text-foreground hover:bg-card/90">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                View Calendar
+                            </Button>
+                            <Button variant="secondary" className="bg-card text-foreground hover:bg-card/90">
+                                <MapPin className="w-4 h-4 mr-2" />
+                                Find Games Nearby
+                            </Button>
+                        </div>
                     </div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-secondary/30 to-transparent rounded-full blur-3xl" />
+                    <div className="absolute bottom-0 left-1/3 w-48 h-48 bg-gradient-to-tr from-primary-foreground/10 to-transparent rounded-full blur-2xl" />
                 </div>
-
-                {/* Glow effects */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-secondary/30 to-transparent rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-1/3 w-48 h-48 bg-gradient-to-tr from-primary-foreground/10 to-transparent rounded-full blur-2xl" />
-            </div>
+            ) : (
+                <section className="flex flex-col items-start gap-5 rounded-2xl border border-border bg-card p-8 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="max-w-2xl">
+                        <h1 className="text-3xl mb-2">Find your next game</h1>
+                        <p className="text-muted-foreground">
+                            Sign up to create a volleyball game or join one nearby. Set your skill level, find a court,
+                            and meet players in your area.
+                        </p>
+                    </div>
+                    <Button onClick={onLogin} className="shrink-0">
+                        <Users className="w-4 h-4 mr-2" />
+                        Sign Up or Log In
+                    </Button>
+                </section>
+            )}
 
             {/* Upcoming Games */}
             <section>
