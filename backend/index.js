@@ -18,9 +18,26 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const allowedOrigins = new Set([process.env.FRONTEND_URL, process.env.ADMIN_FRONTEND_URL].filter(Boolean));
 
 app.disable('x-powered-by');
 app.use(helmet());
+app.use((req, res, next) => {
+    const origin = req.get('origin');
+    if (origin && allowedOrigins.has(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+        res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    }
+
+    if (req.method === 'OPTIONS') {
+        if (origin && !allowedOrigins.has(origin)) return res.sendStatus(403);
+        return res.sendStatus(204);
+    }
+
+    next();
+});
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -30,7 +47,7 @@ const loginLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: {
-        message: 'Too many login attempts. Please try again in 15 minutes.'
+        message: 'Too many login attempts. Please try again in 15 minutes.',
     },
     skipSuccessfulRequests: true,
 });
@@ -44,10 +61,12 @@ app.get('/', (req, res) => {
 
 // Mount your routes
 const authRoutes = require('./routes/auth');
-const locationRoutes = require('./routes/locations');
+const gameRoutes = require('./routes/games');
+const gameActionRequestRoutes = require('./routes/game-action-requests');
 
 app.use('/api/auth', authRoutes); // → Login: /api/auth/login
-app.use('/api/locations', locationRoutes); // → Locations: /api/locations
+app.use('/api/games', gameRoutes);
+app.use('/api/action-requests', gameActionRequestRoutes);
 
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || err.status || 500;
@@ -59,7 +78,7 @@ app.use((err, req, res, next) => {
 
     res.status(statusCode).json({
         message,
-        ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+        ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
     });
 });
 

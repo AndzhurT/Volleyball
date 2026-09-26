@@ -98,143 +98,66 @@ function validatePasswordResetInput(data = {}) {
     return { token, password };
 }
 
-function validateTimeValue(key, value) {
-    if (value === null || value === undefined || value === '') {
-        return null;
-    }
-
-    if (typeof value !== 'string' || !TIME_REGEX.test(value)) {
-        throw validationError(`${key} must be a valid HH:MM value or null.`);
-    }
-
-    return value;
-}
-
-function validateLocationInput(data = {}) {
+function validateGameInput(data = {}) {
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        throw validationError('Location payload must be a valid object.');
+        throw validationError('Game payload must be a valid object.');
     }
 
-    const name = ensureString(data.name, 'Name', { minLength: 2, maxLength: 120 });
-    const address = ensureString(data.address, 'Address', { minLength: 5, maxLength: 255 });
+    const title = ensureString(data.title, 'Title', { minLength: 3, maxLength: 120 });
+    const date = ensureString(data.date, 'Date', { minLength: 10, maxLength: 10 });
+    const time = ensureString(data.time, 'Time', { minLength: 5, maxLength: 5 });
+    const location = ensureString(data.location, 'Address', { minLength: 5, maxLength: 255 });
+    const skillLevel = data.skillLevel;
+    const type = data.type;
+    const courtType = data.courtType;
+    const totalSpots = data.totalSpots;
 
-    const cleanedLocation = {
-        name,
-        address,
-    };
+    if (
+        !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+        Number.isNaN(Date.parse(`${date}T00:00:00Z`)) ||
+        new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date
+    ) {
+        throw validationError('Date must be a valid YYYY-MM-DD value.');
+    }
+    if (!TIME_REGEX.test(time)) throw validationError('Time must be a valid HH:MM value.');
+    if (!['Beginner', 'Intermediate', 'Advanced', 'All Levels'].includes(skillLevel)) {
+        throw validationError('Skill level is invalid.');
+    }
+    if (!['casual', 'competitive'].includes(type)) throw validationError('Game type is invalid.');
+    if (!['indoor', 'outdoor', 'beach'].includes(courtType)) throw validationError('Court type is invalid.');
+    if (!Number.isInteger(totalSpots) || totalSpots < 2 || totalSpots > 100) {
+        throw validationError('Total spots must be an integer between 2 and 100.');
+    }
+
+    const cleanedGame = { title, date, time, location, skillLevel, type, courtType, totalSpots };
 
     if (data.description !== undefined) {
-        if (typeof data.description !== 'string') {
-            throw validationError('Description must be a string.');
+        if (typeof data.description !== 'string' || data.description.length > 2000) {
+            throw validationError('Description must be a string no longer than 2000 characters.');
         }
-        cleanedLocation.description = data.description.trim();
+        cleanedGame.description = data.description.trim();
     }
 
     if (data.coordinates !== undefined) {
-        const { type, coordinates } = data.coordinates || {};
-
-        if (type !== 'Point' || !Array.isArray(coordinates) || coordinates.length !== 2) {
+        const { type: coordinateType, coordinates } = data.coordinates || {};
+        if (coordinateType !== 'Point' || !Array.isArray(coordinates) || coordinates.length !== 2) {
             throw validationError('Coordinates must be a GeoJSON Point with [longitude, latitude].');
         }
-
         const [longitude, latitude] = coordinates;
-        if (typeof longitude !== 'number' || typeof latitude !== 'number') {
-            throw validationError('Coordinates values must be numbers.');
+        if (
+            typeof longitude !== 'number' ||
+            typeof latitude !== 'number' ||
+            longitude < -180 ||
+            longitude > 180 ||
+            latitude < -90 ||
+            latitude > 90
+        ) {
+            throw validationError('Coordinates must contain a valid longitude and latitude.');
         }
-
-        if (longitude < -180 || longitude > 180) {
-            throw validationError('Longitude must be between -180 and 180.');
-        }
-
-        if (latitude < -90 || latitude > 90) {
-            throw validationError('Latitude must be between -90 and 90.');
-        }
-
-        cleanedLocation.coordinates = { type: 'Point', coordinates: [longitude, latitude] };
+        cleanedGame.coordinates = { type: 'Point', coordinates: [longitude, latitude] };
     }
 
-    if (data.photos !== undefined) {
-        if (!Array.isArray(data.photos)) {
-            throw validationError('Photos must be an array of URLs.');
-        }
-        cleanedLocation.photos = data.photos.map((photo) => {
-            if (typeof photo !== 'string' || !photo.trim()) {
-                throw validationError('Each photo must be a non-empty string URL.');
-            }
-            return photo.trim();
-        });
-    }
-
-    if (data.amenities !== undefined) {
-        if (!Array.isArray(data.amenities)) {
-            throw validationError('Amenities must be an array.');
-        }
-        cleanedLocation.amenities = data.amenities.map((amenity) =>
-            ensureString(amenity, 'Amenity', { minLength: 1, maxLength: 80 }),
-        );
-    }
-
-    if (data.operatingHours !== undefined) {
-        if (!data.operatingHours || typeof data.operatingHours !== 'object' || Array.isArray(data.operatingHours)) {
-            throw validationError('Operating hours must be an object.');
-        }
-
-        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        const hours = {};
-
-        for (const day of days) {
-            const value = data.operatingHours[day];
-            if (!value) continue;
-
-            if (typeof value !== 'object' || Array.isArray(value)) {
-                throw validationError(`${day} operating hours must be an object.`);
-            }
-
-            hours[day] = {
-                open: validateTimeValue(`${day}.open`, value.open),
-                close: validateTimeValue(`${day}.close`, value.close),
-            };
-        }
-
-        cleanedLocation.operatingHours = hours;
-    }
-
-    if (data.usualOccupancy !== undefined) {
-        if (!data.usualOccupancy || typeof data.usualOccupancy !== 'object' || Array.isArray(data.usualOccupancy)) {
-            throw validationError('Usual occupancy must be an object.');
-        }
-
-        const usualOccupancy = {};
-        if (data.usualOccupancy.usualPeakHours !== undefined) {
-            if (!Array.isArray(data.usualOccupancy.usualPeakHours)) {
-                throw validationError('usualPeakHours must be an array of strings.');
-            }
-            usualOccupancy.usualPeakHours = data.usualOccupancy.usualPeakHours.map((slot) =>
-                ensureString(slot, 'usualPeakHours entry', { minLength: 1, maxLength: 40 }),
-            );
-        }
-
-        if (data.usualOccupancy.averagePlayersPerHour !== undefined) {
-            if (
-                !Number.isFinite(data.usualOccupancy.averagePlayersPerHour) ||
-                data.usualOccupancy.averagePlayersPerHour < 0
-            ) {
-                throw validationError('averagePlayersPerHour must be a non-negative number.');
-            }
-            usualOccupancy.averagePlayersPerHour = data.usualOccupancy.averagePlayersPerHour;
-        }
-
-        if (data.usualOccupancy.notes !== undefined) {
-            if (typeof data.usualOccupancy.notes !== 'string') {
-                throw validationError('Occupancy notes must be a string.');
-            }
-            usualOccupancy.notes = data.usualOccupancy.notes.trim();
-        }
-
-        cleanedLocation.usualOccupancy = usualOccupancy;
-    }
-
-    return cleanedLocation;
+    return cleanedGame;
 }
 
 module.exports = {
@@ -243,5 +166,5 @@ module.exports = {
     validateEmailRequestInput,
     validateVerificationTokenInput,
     validatePasswordResetInput,
-    validateLocationInput,
+    validateGameInput,
 };

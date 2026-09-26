@@ -5,7 +5,8 @@ const jwt = require('jsonwebtoken');
 const app = require('../index');
 const { connectDB } = require('../config/db');
 const User = require('../models/User');
-const Location = require('../models/Location');
+const Game = require('../models/Game');
+const GameActionRequest = require('../models/GameActionRequest');
 const AuthIdentity = require('../models/AuthIdentity');
 const OAuthLogin = require('../models/OAuthLogin');
 
@@ -17,7 +18,8 @@ const adminCredentials = {
 let server;
 let baseUrl;
 const createdEmails = new Set();
-const createdLocationIds = new Set();
+const createdGameIds = new Set();
+const createdActionRequestIds = new Set();
 const createdIdentityIds = new Set();
 const createdOAuthLoginIds = new Set();
 
@@ -45,12 +47,14 @@ test.before(async () => {
 test.afterEach(async () => {
     await Promise.all([
         ...Array.from(createdEmails, (email) => User.deleteOne({ email })),
-        ...Array.from(createdLocationIds, (id) => Location.deleteOne({ _id: id })),
+        ...Array.from(createdGameIds, (id) => Game.deleteOne({ _id: id })),
+        ...Array.from(createdActionRequestIds, (id) => GameActionRequest.deleteOne({ _id: id })),
         ...Array.from(createdIdentityIds, (id) => AuthIdentity.deleteOne({ _id: id })),
         ...Array.from(createdOAuthLoginIds, (id) => OAuthLogin.deleteOne({ _id: id })),
     ]);
     createdEmails.clear();
-    createdLocationIds.clear();
+    createdGameIds.clear();
+    createdActionRequestIds.clear();
     createdIdentityIds.clear();
     createdOAuthLoginIds.clear();
 });
@@ -414,19 +418,19 @@ test('password reset allows a user to log in with a new password', async () => {
     assert.equal((await json(loginResponse)).user.username, `reset-${suffix}`);
 });
 
-test('forged admin tokens cannot create locations', async () => {
-    const before = await Location.countDocuments();
-    const response = await request('/api/locations', {
+test('forged tokens cannot create games', async () => {
+    const before = await Game.countDocuments();
+    const response = await request('/api/games', {
         method: 'POST',
         headers: { authorization: 'Bearer forged-admin-token' },
-        body: JSON.stringify({ name: 'Should Not Exist', address: 'Nowhere' }),
+        body: JSON.stringify({}),
     });
 
     assert.equal(response.status, 401);
-    assert.equal(await Location.countDocuments(), before);
+    assert.equal(await Game.countDocuments(), before);
 });
 
-test('a regular user cannot create locations', async () => {
+test('a user can request game creation and update, and only admins can approve', async () => {
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const email = `regular-${suffix}@example.com`;
     createdEmails.add(email);
@@ -448,17 +452,197 @@ test('a regular user cannot create locations', async () => {
     const loginBody = await json(login);
     assert.equal(login.status, 200);
 
-    const response = await request('/api/locations', {
+    const proposedGame = {
+        title: `Game ${suffix}`,
+        date: '2026-10-10',
+        time: '18:30',
+        location: '123 Volleyball Way',
+        coordinates: { type: 'Point', coordinates: [-73.9857, 40.7484] },
+        skillLevel: 'Intermediate',
+        totalSpots: 2,
+        type: 'casual',
+        courtType: 'indoor',
+        description: 'Test game',
+    };
+
+    const directCreate = await request('/api/games', {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
-        body: JSON.stringify({ name: 'Should Not Exist', address: 'Nowhere' }),
+        body: JSON.stringify(proposedGame),
     });
+    assert.equal(directCreate.status, 403);
+    assert.equal(await Game.countDocuments({ title: proposedGame.title }), 0);
 
-    assert.equal(response.status, 403);
-    assert.equal(await Location.exists({ name: 'Should Not Exist' }), null);
+    const createRequestResponse = await request('/api/action-requests', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify({ action: 'create', game: proposedGame }),
+    });
+    const createRequest = await json(createRequestResponse);
+    if (createRequest._id) createdActionRequestIds.add(createRequest._id);
+    assert.equal(createRequestResponse.status, 201);
+    assert.equal(createRequest.status, 'pending');
+
+    const myRequests = await request('/api/action-requests/mine', {
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.ok((await json(myRequests)).data.some((item) => item._id === createRequest._id));
+
+    const userQueue = await request('/api/action-requests');
+    assert.equal(userQueue.status, 401);
+    const regularQueue = await request('/api/action-requests', {
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.equal(regularQueue.status, 403);
+    const adminLogin = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(adminCredentials),
+    });
+    const adminToken = (await json(adminLogin)).token;
+    const adminQueue = await request('/api/action-requests?status=pending', {
+        headers: { authorization: `Bearer ${adminToken}` },
+    });
+    const queueBody = await json(adminQueue);
+    assert.equal(adminQueue.status, 200);
+    assert.ok(queueBody.data.some((item) => item._id === createRequest._id));
+    const adminDetail = await request(`/api/action-requests/${createRequest._id}`, {
+        headers: { authorization: `Bearer ${adminToken}` },
+    });
+    assert.equal(adminDetail.status, 200);
+
+    const forbiddenApproval = await request(`/api/action-requests/${createRequest._id}/approve`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.equal(forbiddenApproval.status, 403);
+
+    const approval = await request(`/api/action-requests/${createRequest._id}/approve`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${adminToken}` },
+    });
+    const approvalBody = await json(approval);
+    assert.equal(approval.status, 200);
+    assert.equal(approvalBody.request.status, 'approved');
+    const created = approvalBody.game;
+    createdGameIds.add(created.id);
+    assert.equal(created.createdBy, createRequest.requestedBy._id || createRequest.requestedBy);
+    assert.equal(created.location, '123 Volleyball Way');
+    assert.equal(created.spotsLeft, 1);
+
+    const duplicateApproval = await request(`/api/action-requests/${createRequest._id}/approve`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${adminToken}` },
+    });
+    assert.equal(duplicateApproval.status, 409);
+    assert.equal(await Game.countDocuments({ title: proposedGame.title }), 1);
+
+    const anonymousRead = await request(`/api/games/${created.id}`);
+    const anonymousBody = await json(anonymousRead);
+    assert.equal(anonymousRead.status, 200);
+    assert.equal('location' in anonymousBody, false);
+    assert.equal('coordinates' in anonymousBody, false);
+
+    const anonymousList = await request('/api/games');
+    const listedGame = (await json(anonymousList)).data.find((game) => game.id === created.id);
+    assert.ok(listedGame);
+    assert.equal('location' in listedGame, false);
+    assert.equal('coordinates' in listedGame, false);
+
+    const authenticatedRead = await request(`/api/games/${created.id}`, {
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.equal((await json(authenticatedRead)).location, '123 Volleyball Way');
+
+    const proposedUpdate = { ...proposedGame, title: `Updated Game ${suffix}` };
+    const directUpdate = await request(`/api/games/${created.id}`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify(proposedUpdate),
+    });
+    assert.equal(directUpdate.status, 403);
+
+    const updateRequestResponse = await request('/api/action-requests', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify({ action: 'update', gameId: created.id, game: proposedUpdate }),
+    });
+    const updateRequest = await json(updateRequestResponse);
+    createdActionRequestIds.add(updateRequest._id);
+    assert.equal(updateRequestResponse.status, 201);
+
+    const updateApproval = await request(`/api/action-requests/${updateRequest._id}/approve`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${adminToken}` },
+    });
+    const updateApprovalBody = await json(updateApproval);
+    assert.equal(updateApproval.status, 200);
+    assert.equal(updateApprovalBody.game.title, `Updated Game ${suffix}`);
+    assert.equal(updateApprovalBody.request.status, 'approved');
+
+    const declinedRequestResponse = await request('/api/action-requests', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify({
+            action: 'update',
+            gameId: created.id,
+            game: { ...proposedUpdate, title: `Declined Game ${suffix}` },
+        }),
+    });
+    const declinedRequest = await json(declinedRequestResponse);
+    createdActionRequestIds.add(declinedRequest._id);
+    const decline = await request(`/api/action-requests/${declinedRequest._id}/decline`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ reviewNote: 'Please provide more detail.' }),
+    });
+    const declineBody = await json(decline);
+    assert.equal(decline.status, 200);
+    assert.equal(declineBody.status, 'declined');
+    assert.equal(declineBody.reviewNote, 'Please provide more detail.');
+    assert.equal((await Game.findById(created.id)).title, `Updated Game ${suffix}`);
+
+    const secondEmail = `join-${suffix}@example.com`;
+    createdEmails.add(secondEmail);
+    const secondRegistration = await request('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username: `join-${suffix}`, email: secondEmail, password: 'StrongPass123' }),
+    });
+    assert.equal(secondRegistration.status, 201);
+    const secondLogin = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: secondEmail, password: 'StrongPass123' }),
+    });
+    const secondLoginBody = await json(secondLogin);
+
+    const nonOwnerUpdateRequest = await request('/api/action-requests', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${secondLoginBody.token}` },
+        body: JSON.stringify({ action: 'update', gameId: created.id, game: proposedGame }),
+    });
+    assert.equal(nonOwnerUpdateRequest.status, 403);
+
+    const join = await request(`/api/games/${created.id}/join`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${secondLoginBody.token}` },
+    });
+    assert.equal(join.status, 200);
+    assert.equal((await json(join)).spotsLeft, 0);
+
+    const fullJoin = await request(`/api/games/${created.id}/join`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.equal(fullJoin.status, 409);
+
+    const ownerDelete = await request(`/api/games/${created.id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.equal(ownerDelete.status, 200);
+    createdGameIds.delete(created.id);
 });
 
-test('admin can create and delete a location', async () => {
+test('admins can create and update games directly while non-owners cannot delete them', async () => {
     const login = await request('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify(adminCredentials),
@@ -467,34 +651,92 @@ test('admin can create and delete a location', async () => {
     assert.equal(login.status, 200);
 
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const name = `Integration Court ${suffix}`;
-    const createResponse = await request('/api/locations', {
+
+    const createResponse = await request('/api/games', {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
         body: JSON.stringify({
-            name,
-            address: '123 Test Street',
+            title: `Owned Game ${suffix}`,
+            date: '2026-10-11',
+            time: '19:00',
+            location: '123 Test Street',
             coordinates: { type: 'Point', coordinates: [-73.9857, 40.7484] },
+            skillLevel: 'All Levels',
+            totalSpots: 12,
+            type: 'casual',
+            courtType: 'outdoor',
         }),
     });
     const created = await json(createResponse);
-    if (created._id) {
-        createdLocationIds.add(created._id);
-    }
+    if (created.id) createdGameIds.add(created.id);
 
     assert.equal(createResponse.status, 201);
-    assert.equal(created.name, name);
+    assert.equal(created.title, `Owned Game ${suffix}`);
+
+    const updateResponse = await request(`/api/games/${created.id}`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify({
+            title: `Admin Updated ${suffix}`,
+            date: '2026-10-12',
+            time: '20:00',
+            location: '456 Admin Street',
+            skillLevel: 'Advanced',
+            totalSpots: 10,
+            type: 'competitive',
+            courtType: 'indoor',
+        }),
+    });
+    assert.equal(updateResponse.status, 200);
+    assert.equal((await json(updateResponse)).title, `Admin Updated ${suffix}`);
+
+    const userEmail = `non-owner-${suffix}@example.com`;
+    createdEmails.add(userEmail);
+    await request('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username: `non-owner-${suffix}`, email: userEmail, password: 'StrongPass123' }),
+    });
+    const userLogin = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: userEmail, password: 'StrongPass123' }),
+    });
+    const userToken = (await json(userLogin)).token;
+    const forbiddenDelete = await request(`/api/games/${created.id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${userToken}` },
+    });
+    assert.equal(forbiddenDelete.status, 403);
 
     try {
-        const deleteResponse = await request(`/api/locations/${created._id}`, {
+        const deleteResponse = await request(`/api/games/${created.id}`, {
             method: 'DELETE',
             headers: { authorization: `Bearer ${loginBody.token}` },
         });
 
         assert.equal(deleteResponse.status, 200);
-        assert.equal(await Location.exists({ _id: created._id }), null);
+        assert.equal(await Game.exists({ _id: created.id }), null);
     } finally {
-        await Location.deleteOne({ _id: created._id });
-        createdLocationIds.delete(created._id);
+        await Game.deleteOne({ _id: created.id });
+        createdGameIds.delete(created.id);
     }
+});
+
+test('configured frontend origins can preflight API requests but other origins are rejected', async () => {
+    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const allowed = await request('/api/action-requests', {
+        method: 'OPTIONS',
+        headers: {
+            origin: allowedOrigin,
+            'access-control-request-method': 'GET',
+            'access-control-request-headers': 'authorization',
+        },
+    });
+    assert.equal(allowed.status, 204);
+    assert.equal(allowed.headers.get('access-control-allow-origin'), allowedOrigin);
+
+    const rejected = await request('/api/action-requests', {
+        method: 'OPTIONS',
+        headers: { origin: 'https://untrusted.example' },
+    });
+    assert.equal(rejected.status, 403);
 });

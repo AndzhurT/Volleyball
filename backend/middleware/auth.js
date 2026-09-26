@@ -5,31 +5,44 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is not set in environment variables');
+    throw new Error('JWT_SECRET is not set in environment variables');
 }
+
+const optionalProtect = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return next();
+
+    try {
+        req.user = jwt.verify(token, JWT_SECRET);
+    } catch {
+        req.user = undefined;
+    }
+
+    next();
+};
 
 // Protect routes - require login
 const protect = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
+    const token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
 
-  if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+    if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // { id, role }
-    next();
-  } catch (err) {
-    res.status(401).json({ message: 'Token is not valid' });
-  }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded; // { id, role }
+        next();
+    } catch (err) {
+        res.status(401).json({ message: 'Token is not valid' });
+    }
 };
 
 // Restrict to admin only
 const admin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Admin access required' });
-  }
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ message: 'Admin access required' });
+    }
 };
 
-module.exports = { protect, admin };
+module.exports = { protect, optionalProtect, admin };
