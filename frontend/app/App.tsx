@@ -23,7 +23,17 @@ type GameWithCoords = Game & {
 function App() {
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
     const { user: authUser, isLoading: isAuthLoading, setAuthenticatedUser, logout } = useAuth();
+    const isLoggedIn = authUser !== null;
+
+    const handleFindGames = () => {
+        if (!isLoggedIn) {
+            setIsAuthDialogOpen(true);
+            return;
+        }
+        setCurrentView('map');
+    };
 
     // Mock Data
     const mockGames: GameWithCoords[] = [
@@ -228,6 +238,10 @@ function App() {
     };
 
     const handleRSVP = (gameId: string) => {
+        if (!isLoggedIn) {
+            setIsAuthDialogOpen(true);
+            return;
+        }
         console.log('RSVP to game:', gameId);
         // In a real app, this would send to backend
     };
@@ -247,8 +261,10 @@ function App() {
         setCurrentView('profile');
     };
 
-    const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
-    const isLoggedIn = authUser !== null;
+    const handleLogout = async () => {
+        await logout();
+        setCurrentView('dashboard');
+    };
 
     return (
         <div className="min-h-screen bg-background">
@@ -275,7 +291,7 @@ function App() {
                             </Button>
                             <Button
                                 variant={currentView === 'map' ? 'default' : 'ghost'}
-                                onClick={() => setCurrentView('map')}
+                                onClick={handleFindGames}
                                 className={currentView === 'map' ? 'bg-primary text-primary-foreground' : ''}>
                                 <MapPin className="w-4 h-4 mr-2" />
                                 Find Games
@@ -314,7 +330,7 @@ function App() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => void logout()}
+                                        onClick={() => void handleLogout()}
                                         aria-label="Log out">
                                         <LogOut className="w-5 h-5" />
                                     </Button>
@@ -343,6 +359,7 @@ function App() {
                         isLoggedIn={isLoggedIn}
                         username={authUser?.username}
                         onLogin={() => setIsAuthDialogOpen(true)}
+                        onFindGames={handleFindGames}
                         upcomingGames={mockGames.slice(0, 3)}
                         nearbyGames={mockGames}
                         suggestedPlayers={mockPlayers}
@@ -353,16 +370,34 @@ function App() {
                     />
                 )}
 
-                {currentView === 'map' && (
-                    <MapView games={mockGames} onRSVP={handleRSVP} onViewGameDetails={handleViewGameDetails} />
-                )}
+                {currentView === 'map' &&
+                    (isLoggedIn ? (
+                        <MapView games={mockGames} onRSVP={handleRSVP} onViewGameDetails={handleViewGameDetails} />
+                    ) : (
+                        <Dashboard
+                            isLoggedIn={false}
+                            onLogin={() => setIsAuthDialogOpen(true)}
+                            onFindGames={handleFindGames}
+                            upcomingGames={[]}
+                            nearbyGames={[]}
+                            suggestedPlayers={[]}
+                            onRSVP={handleRSVP}
+                            onViewGameDetails={handleViewGameDetails}
+                            onConnect={handleConnect}
+                            onViewProfile={handleViewProfile}
+                        />
+                    ))}
 
                 {currentView === 'profile' && (
                     <ProfileView
                         isOwnProfile={true}
                         player={currentUser}
+                        upcomingGames={mockGames.slice(0, 3)}
+                        showGameLocations={isLoggedIn}
                         onEditProfile={() => console.log('Edit profile')}
                         onConnect={handleConnect}
+                        onRSVP={handleRSVP}
+                        onViewGameDetails={handleViewGameDetails}
                     />
                 )}
 
@@ -394,7 +429,7 @@ function App() {
                     </Button>
                     <Button
                         variant={currentView === 'map' ? 'default' : 'ghost'}
-                        onClick={() => setCurrentView('map')}
+                        onClick={handleFindGames}
                         className={`flex-col h-auto py-2 ${currentView === 'map' ? 'bg-primary text-primary-foreground' : ''}`}>
                         <MapPin className="w-5 h-5 mb-1" />
                         <span className="text-xs">Map</span>

@@ -9,6 +9,7 @@ interface DashboardProps {
     isLoggedIn: boolean;
     username?: string;
     onLogin: () => void;
+    onFindGames: () => void;
     upcomingGames: Game[];
     nearbyGames: Game[];
     suggestedPlayers: Player[];
@@ -22,6 +23,7 @@ export function Dashboard({
     isLoggedIn,
     username,
     onLogin,
+    onFindGames,
     upcomingGames,
     nearbyGames,
     suggestedPlayers,
@@ -73,7 +75,10 @@ export function Dashboard({
                                 <Calendar className="w-4 h-4 mr-2" />
                                 View Calendar
                             </Button>
-                            <Button variant="secondary" className="bg-card text-foreground hover:bg-card/90">
+                            <Button
+                                variant="secondary"
+                                className="bg-card text-foreground hover:bg-card/90"
+                                onClick={onFindGames}>
                                 <MapPin className="w-4 h-4 mr-2" />
                                 Find Games Nearby
                             </Button>
@@ -98,30 +103,6 @@ export function Dashboard({
                 </section>
             )}
 
-            {/* Upcoming Games */}
-            <section>
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h2 className="text-2xl mb-1">Your Upcoming Games</h2>
-                        <p className="text-muted-foreground">Games you've joined and scheduled</p>
-                    </div>
-                    <Button variant="outline" className="border-border hover:border-primary/50">
-                        View All
-                    </Button>
-                </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {upcomingGames.slice(0, 3).map((game) => (
-                        <GameCard
-                            key={game.id}
-                            game={game}
-                            onRSVP={onRSVP}
-                            onViewDetails={onViewGameDetails}
-                            isJoined={true}
-                        />
-                    ))}
-                </div>
-            </section>
-
             {/* Nearby Games */}
             <section>
                 <div className="flex items-center justify-between mb-4">
@@ -129,13 +110,19 @@ export function Dashboard({
                         <h2 className="text-2xl mb-1">Discover Nearby Games</h2>
                         <p className="text-muted-foreground">New games happening in your area</p>
                     </div>
-                    <Button variant="outline" className="border-border hover:border-primary/50">
+                    <Button variant="outline" className="border-border hover:border-primary/50" onClick={onFindGames}>
                         View Map
                     </Button>
                 </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {nearbyGames.slice(0, 6).map((game) => (
-                        <GameCard key={game.id} game={game} onRSVP={onRSVP} onViewDetails={onViewGameDetails} />
+                        <GameCard
+                            key={game.id}
+                            game={game}
+                            onRSVP={onRSVP}
+                            onViewDetails={onViewGameDetails}
+                            showLocation={isLoggedIn}
+                        />
                     ))}
                 </div>
             </section>
