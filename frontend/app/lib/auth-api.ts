@@ -5,6 +5,39 @@ export interface AuthUser {
     emailVerified?: boolean;
 }
 
+export interface GameActionRequest {
+    _id: string;
+    action: 'create' | 'update';
+    game: string | null;
+    proposedGame: {
+        title: string;
+        date: string;
+        time: string;
+        location: string;
+        description?: string;
+        skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
+        totalSpots: number;
+        type: 'casual' | 'competitive';
+        courtType: 'indoor' | 'outdoor' | 'beach';
+    };
+    status: 'pending' | 'processing' | 'approved' | 'declined';
+    reviewNote?: string;
+    createdAt: string;
+    reviewedAt?: string | null;
+}
+
+export interface GameActionRequestInput {
+    title: string;
+    date: string;
+    time: string;
+    location: string;
+    description: string;
+    skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
+    totalSpots: number;
+    type: 'casual' | 'competitive';
+    courtType: 'indoor' | 'outdoor' | 'beach';
+}
+
 interface AuthResponse {
     token: string;
     user: AuthUser;
@@ -113,6 +146,46 @@ export function resetPassword(token: string, password: string) {
         method: 'POST',
         body: JSON.stringify({ token, password }),
     });
+}
+
+export function createGameActionRequest(
+    token: string,
+    game: GameActionRequestInput,
+    options: { action?: 'create' | 'update'; gameId?: string } = {},
+) {
+    return request<GameActionRequest>(
+        '/api/action-requests',
+        {
+            method: 'POST',
+            body: JSON.stringify({ action: options.action || 'create', gameId: options.gameId, game }),
+        },
+        token,
+    );
+}
+
+export function getMyGameActionRequests(token: string) {
+    return request<{ data: GameActionRequest[] }>('/api/action-requests/mine', { method: 'GET' }, token);
+}
+
+export function updateMyGameActionRequest(token: string, requestId: string, game: GameActionRequestInput) {
+    return request<GameActionRequest>(
+        `/api/action-requests/${encodeURIComponent(requestId)}`,
+        {
+            method: 'PUT',
+            body: JSON.stringify({ game }),
+        },
+        token,
+    );
+}
+
+export function deleteMyGameActionRequest(token: string, requestId: string) {
+    return request<{ message: string }>(
+        `/api/action-requests/${encodeURIComponent(requestId)}`,
+        {
+            method: 'DELETE',
+        },
+        token,
+    );
 }
 
 export function storeAuthToken(token: string, rememberMe: boolean) {

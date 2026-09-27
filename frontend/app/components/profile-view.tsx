@@ -1,4 +1,4 @@
-import { MapPin, Trophy, Calendar, Settings, ThumbsUp, Star } from 'lucide-react';
+import { MapPin, Trophy, Calendar, Settings, ThumbsUp, Star, Pencil, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
@@ -8,6 +8,17 @@ import { GameCard, type Game } from './game-card';
 import { PlayerCard, type Player } from './player-card';
 import { Textarea } from './ui/textarea';
 import { useState } from 'react';
+import type { GameActionRequest } from '../lib/auth-api';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from './ui/alert-dialog';
 
 interface ProfileViewProps {
     isOwnProfile?: boolean;
@@ -35,7 +46,11 @@ interface ProfileViewProps {
         };
     };
     upcomingGames?: Game[];
+    gameActionRequests?: GameActionRequest[];
+    areRequestsLoading?: boolean;
     showGameLocations?: boolean;
+    onEditGameRequest?: (request: GameActionRequest) => void;
+    onDeleteGameRequest?: (requestId: string) => Promise<void>;
     onEditProfile?: () => void;
     onConnect?: (playerId: string) => void;
     onRSVP?: (gameId: string) => void;
@@ -46,7 +61,11 @@ export function ProfileView({
     isOwnProfile = false,
     player,
     upcomingGames = [],
+    gameActionRequests = [],
+    areRequestsLoading = false,
     showGameLocations = true,
+    onEditGameRequest,
+    onDeleteGameRequest,
     onEditProfile,
     onConnect,
     onRSVP,
@@ -54,6 +73,8 @@ export function ProfileView({
 }: ProfileViewProps) {
     const [newReview, setNewReview] = useState('');
     const [newRating, setNewRating] = useState(5);
+    const [requestToDelete, setRequestToDelete] = useState<GameActionRequest | null>(null);
+    const [requestActionError, setRequestActionError] = useState('');
 
     const handleSubmitReview = () => {
         console.log('Submitting review:', { rating: newRating, comment: newReview });
@@ -189,8 +210,9 @@ export function ProfileView({
 
             {/* Tabs Section */}
             <Tabs defaultValue="games" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 bg-muted/50">
+                <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-6' : 'grid-cols-5'} bg-muted/50`}>
                     <TabsTrigger value="games">Games</TabsTrigger>
+                    {isOwnProfile && <TabsTrigger value="requests">Requests</TabsTrigger>}
                     <TabsTrigger value="reviews">Reviews</TabsTrigger>
                     <TabsTrigger value="achievements">Achievements</TabsTrigger>
                     <TabsTrigger value="followers">Followers</TabsTrigger>
@@ -229,6 +251,119 @@ export function ProfileView({
                         </div>
                     </div>
                 </TabsContent>
+
+                {isOwnProfile && (
+                    <TabsContent value="requests" className="space-y-4 mt-6">
+                        <div>
+                            <h2 className="text-2xl mb-1">Game Requests</h2>
+                            <p className="text-muted-foreground">
+                                Track your submitted game creation and update requests.
+                            </p>
+                        </div>
+                        {areRequestsLoading ? (
+                            <p className="text-muted-foreground">Loading requests...</p>
+                        ) : gameActionRequests.length ? (
+                            <div className="space-y-3">
+                                {requestActionError && (
+                                    <p role="alert" className="text-sm text-destructive">
+                                        {requestActionError}
+                                    </p>
+                                )}
+                                {gameActionRequests.map((request) => (
+                                    <Card key={request._id} className="p-4 border border-border bg-card">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <h3 className="font-medium">{request.proposedGame.title}</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {request.action === 'create' ? 'Game creation' : 'Game update'} ·
+                                                    Submitted {new Date(request.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <Badge
+                                                variant="outline"
+                                                className={
+                                                    request.status === 'approved'
+                                                        ? 'border-success/30 bg-success/10 text-success'
+                                                        : request.status === 'declined'
+                                                          ? 'border-danger/30 bg-danger/10 text-danger'
+                                                          : 'border-warning/30 bg-warning/10 text-warning'
+                                                }>
+                                                {request.status}
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-2 text-sm text-muted-foreground">
+                                            {request.proposedGame.date} at {request.proposedGame.time} ·{' '}
+                                            {request.proposedGame.location}
+                                        </p>
+                                        {request.reviewNote && (
+                                            <p className="mt-2 border-t border-border pt-2 text-sm">
+                                                Admin note: {request.reviewNote}
+                                            </p>
+                                        )}
+                                        {request.status === 'pending' && (
+                                            <div className="mt-4 flex justify-end gap-2 border-t border-border pt-3">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => onEditGameRequest?.(request)}>
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setRequestActionError('');
+                                                        setRequestToDelete(request);
+                                                    }}>
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-muted-foreground">You haven't submitted any game requests yet.</p>
+                        )}
+                    </TabsContent>
+                )}
+
+                <AlertDialog
+                    open={requestToDelete !== null}
+                    onOpenChange={(open) => {
+                        if (!open) setRequestToDelete(null);
+                    }}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this pending request?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This removes the request from your profile and the admin review queue. This cannot be
+                                undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Keep Request</AlertDialogCancel>
+                            <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => {
+                                    if (!requestToDelete || !onDeleteGameRequest) return;
+                                    void onDeleteGameRequest(requestToDelete._id)
+                                        .then(() => setRequestToDelete(null))
+                                        .catch((error: unknown) => {
+                                            setRequestActionError(
+                                                error instanceof Error
+                                                    ? error.message
+                                                    : 'Unable to delete the request.',
+                                            );
+                                        });
+                                }}>
+                                Delete Request
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
 
                 <TabsContent value="reviews" className="space-y-6 mt-6">
                     <div>

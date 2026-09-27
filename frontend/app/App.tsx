@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Home, MapPin, User, Plus, Users, Bell, LogIn, LogOut } from 'lucide-react';
 
 import { Button } from './components/ui/button';
@@ -9,6 +9,15 @@ import { CreateGameDialog } from './components/create-game-dialog';
 import { AuthDialog } from './components/auth-dialog';
 import { PlayersViewOption1 } from './components/players-view-option1';
 import { useAuth } from './context/AuthContext';
+import {
+    createGameActionRequest,
+    deleteMyGameActionRequest,
+    getMyGameActionRequests,
+    getStoredAuthToken,
+    updateMyGameActionRequest,
+    type GameActionRequest,
+    type GameActionRequestInput,
+} from './lib/auth-api';
 
 import type { Game } from './components/game-card';
 import type { Player } from './components/player-card';
@@ -24,8 +33,51 @@ function App() {
     const [currentView, setCurrentView] = useState<View>('dashboard');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+    const [requestToEdit, setRequestToEdit] = useState<GameActionRequest | null>(null);
+    const [gameActionRequests, setGameActionRequests] = useState<GameActionRequest[]>([]);
+    const [areRequestsLoading, setAreRequestsLoading] = useState(false);
     const { user: authUser, isLoading: isAuthLoading, setAuthenticatedUser, logout } = useAuth();
     const isLoggedIn = authUser !== null;
+
+    const refreshGameActionRequests = async () => {
+        const token = getStoredAuthToken();
+        if (!token) {
+            setGameActionRequests([]);
+            return;
+        }
+
+        setAreRequestsLoading(true);
+        try {
+            const response = await getMyGameActionRequests(token);
+            setGameActionRequests(response.data);
+        } finally {
+            setAreRequestsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        let cancelled = false;
+        const token = getStoredAuthToken();
+        if (!authUser || !token) {
+            setGameActionRequests([]);
+            setAreRequestsLoading(false);
+            return;
+        }
+
+        setAreRequestsLoading(true);
+        getMyGameActionRequests(token)
+            .then((response) => {
+                if (!cancelled) setGameActionRequests(response.data);
+            })
+            .catch((error) => console.error('Unable to load game requests:', error))
+            .finally(() => {
+                if (!cancelled) setAreRequestsLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [authUser?.id]);
 
     const handleFindGames = () => {
         if (!isLoggedIn) {
@@ -232,9 +284,32 @@ function App() {
         },
     };
 
-    const handleCreateGame = (gameData: any) => {
-        console.log('Creating game:', gameData);
-        // In a real app, this would send to backend
+    const handleCreateGame = async (gameData: GameActionRequestInput, requestId?: string) => {
+        const token = getStoredAuthToken();
+        if (!token) throw new Error('Please sign in again before submitting a game request.');
+
+        if (requestId) {
+            await updateMyGameActionRequest(token, requestId, gameData);
+        } else {
+            await createGameActionRequest(token, gameData);
+        }
+        try {
+            await refreshGameActionRequests();
+        } catch (error) {
+            console.error('Request submitted but history could not be refreshed:', error);
+        }
+    };
+
+    const handleDeleteGameRequest = async (requestId: string) => {
+        const token = getStoredAuthToken();
+        if (!token) throw new Error('Please sign in again before deleting this request.');
+        await deleteMyGameActionRequest(token, requestId);
+        setGameActionRequests((requests) => requests.filter((request) => request._id !== requestId));
+        try {
+            await refreshGameActionRequests();
+        } catch (error) {
+            console.error('Request deleted but request history could not be refreshed:', error);
+        }
     };
 
     const handleRSVP = (gameId: string) => {
@@ -393,7 +468,14 @@ function App() {
                         isOwnProfile={true}
                         player={currentUser}
                         upcomingGames={mockGames.slice(0, 3)}
+                        gameActionRequests={gameActionRequests}
+                        areRequestsLoading={areRequestsLoading}
                         showGameLocations={isLoggedIn}
+                        onEditGameRequest={(request) => {
+                            setRequestToEdit(request);
+                            setIsCreateDialogOpen(true);
+                        }}
+                        onDeleteGameRequest={handleDeleteGameRequest}
                         onEditProfile={() => console.log('Edit profile')}
                         onConnect={handleConnect}
                         onRSVP={handleRSVP}
@@ -413,7 +495,11 @@ function App() {
             {/* Create Game Dialog */}
             <CreateGameDialog
                 open={isCreateDialogOpen}
-                onOpenChange={setIsCreateDialogOpen}
+                onOpenChange={(open) => {
+                    setIsCreateDialogOpen(open);
+                    if (!open) setRequestToEdit(null);
+                }}
+                requestToEdit={requestToEdit}
                 onCreateGame={handleCreateGame}
             />
 

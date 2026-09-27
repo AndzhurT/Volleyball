@@ -80,6 +80,8 @@ docker compose up --build
 | DELETE | `/api/games/:id/participants/me`   | User JWT       | Leave a game                                          |
 | DELETE | `/api/games/:id`                   | Creator/Admin  | Delete a game                                         |
 | POST   | `/api/action-requests`             | User JWT       | Request game creation or update                       |
+| PUT    | `/api/action-requests/:id`         | Owner JWT      | Update a pending request                              |
+| DELETE | `/api/action-requests/:id`         | Owner JWT      | Delete a pending request                              |
 | GET    | `/api/action-requests/mine`        | User JWT       | List the current user's requests                      |
 | GET    | `/api/action-requests`             | Admin JWT      | List the admin review queue                           |
 | GET    | `/api/action-requests/:id`         | Admin JWT      | Read one request                                      |
@@ -273,6 +275,9 @@ curl -X POST "$BASE_URL/api/action-requests" \
 For an update, send `"action": "update"`, the owned `gameId`, and the full proposed
 `game` object. Each request is stored with its requester, action, proposed data, status,
 reviewer, review time, and optional review note.
+While the status is `pending`, the requester can replace the proposed game with `PUT
+/api/action-requests/REQUEST_ID` or remove the request with `DELETE
+/api/action-requests/REQUEST_ID`. Once admin review starts, both operations are rejected.
 
 ### Review requests (admin dashboard)
 

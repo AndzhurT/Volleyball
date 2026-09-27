@@ -55,6 +55,52 @@ router.post('/', protect, async (req, res, next) => {
     }
 });
 
+router.put('/:id', protect, async (req, res, next) => {
+    try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid action request ID' });
+        const proposedGame = validateGameInput(req.body?.game);
+        const actionRequest = await GameActionRequest.findOne({
+            _id: req.params.id,
+            requestedBy: req.user.id,
+        });
+        if (!actionRequest) return res.status(404).json({ message: 'Action request not found' });
+        if (actionRequest.status !== 'pending') {
+            return res.status(409).json({ message: 'Only pending requests can be updated' });
+        }
+
+        const updatedRequest = await GameActionRequest.findOneAndUpdate(
+            { _id: actionRequest._id, requestedBy: req.user.id, status: 'pending' },
+            { $set: { proposedGame } },
+            { new: true, runValidators: true },
+        );
+        if (!updatedRequest) return res.status(409).json({ message: 'This request has already been reviewed' });
+        await populateRequest(updatedRequest);
+        res.json(updatedRequest);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.delete('/:id', protect, async (req, res, next) => {
+    try {
+        if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid action request ID' });
+        const result = await GameActionRequest.deleteOne({
+            _id: req.params.id,
+            requestedBy: req.user.id,
+            status: 'pending',
+        });
+        if (result.deletedCount) return res.json({ message: 'Pending action request deleted' });
+
+        const existingRequest = await GameActionRequest.findById(req.params.id).select('requestedBy status');
+        if (!existingRequest || String(existingRequest.requestedBy) !== String(req.user.id)) {
+            return res.status(404).json({ message: 'Action request not found' });
+        }
+        return res.status(409).json({ message: 'Only pending requests can be deleted' });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/mine', protect, async (req, res, next) => {
     try {
         const requests = await GameActionRequest.find({ requestedBy: req.user.id })

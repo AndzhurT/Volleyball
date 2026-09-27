@@ -483,6 +483,23 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(createRequestResponse.status, 201);
     assert.equal(createRequest.status, 'pending');
 
+    const pendingEdit = { ...proposedGame, title: `Pending Edit ${suffix}` };
+    const pendingEditResponse = await request(`/api/action-requests/${createRequest._id}`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify({ game: pendingEdit }),
+    });
+    assert.equal(pendingEditResponse.status, 200);
+    assert.equal((await json(pendingEditResponse)).proposedGame.title, pendingEdit.title);
+
+    const disposableRequestResponse = await request('/api/action-requests', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify({ action: 'create', game: { ...proposedGame, title: `Delete Pending ${suffix}` } }),
+    });
+    const disposableRequest = await json(disposableRequestResponse);
+    createdActionRequestIds.add(disposableRequest._id);
+
     const myRequests = await request('/api/action-requests/mine', {
         headers: { authorization: `Bearer ${loginBody.token}` },
     });
@@ -499,6 +516,24 @@ test('a user can request game creation and update, and only admins can approve',
         body: JSON.stringify(adminCredentials),
     });
     const adminToken = (await json(adminLogin)).token;
+    const nonOwnerEdit = await request(`/api/action-requests/${createRequest._id}`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ game: proposedGame }),
+    });
+    assert.equal(nonOwnerEdit.status, 404);
+    const nonOwnerDelete = await request(`/api/action-requests/${disposableRequest._id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${adminToken}` },
+    });
+    assert.equal(nonOwnerDelete.status, 404);
+    const deletePending = await request(`/api/action-requests/${disposableRequest._id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.equal(deletePending.status, 200);
+    createdActionRequestIds.delete(disposableRequest._id);
+
     const adminQueue = await request('/api/action-requests?status=pending', {
         headers: { authorization: `Bearer ${adminToken}` },
     });
@@ -526,6 +561,7 @@ test('a user can request game creation and update, and only admins can approve',
     const created = approvalBody.game;
     createdGameIds.add(created.id);
     assert.equal(created.createdBy, createRequest.requestedBy._id || createRequest.requestedBy);
+    assert.equal(created.title, pendingEdit.title);
     assert.equal(created.location, '123 Volleyball Way');
     assert.equal(created.spotsLeft, 1);
 
@@ -534,7 +570,18 @@ test('a user can request game creation and update, and only admins can approve',
         headers: { authorization: `Bearer ${adminToken}` },
     });
     assert.equal(duplicateApproval.status, 409);
-    assert.equal(await Game.countDocuments({ title: proposedGame.title }), 1);
+    assert.equal(await Game.countDocuments({ title: pendingEdit.title }), 1);
+    const reviewedUpdate = await request(`/api/action-requests/${createRequest._id}`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+        body: JSON.stringify({ game: proposedGame }),
+    });
+    assert.equal(reviewedUpdate.status, 409);
+    const reviewedDelete = await request(`/api/action-requests/${createRequest._id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${loginBody.token}` },
+    });
+    assert.equal(reviewedDelete.status, 409);
 
     const anonymousRead = await request(`/api/games/${created.id}`);
     const anonymousBody = await json(anonymousRead);
