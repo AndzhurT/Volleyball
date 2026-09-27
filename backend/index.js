@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+const profileRoutes = require('./routes/profiles');
 const { connectDB } = require('./config/db');
 
 if (!process.env.MONGO_URI) {
@@ -67,6 +68,7 @@ const gameActionRequestRoutes = require('./routes/game-action-requests');
 app.use('/api/auth', authRoutes); // → Login: /api/auth/login
 app.use('/api/games', gameRoutes);
 app.use('/api/action-requests', gameActionRequestRoutes);
+app.use('/api/profiles', profileRoutes);
 
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || err.status || 500;

@@ -60,6 +60,50 @@ function validateLoginInput(data = {}) {
     return { email, password };
 }
 
+function validateProfileInput(data = {}) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw validationError('Profile payload must be a valid object.');
+    }
+
+    const displayName = ensureString(data.displayName, 'Display name', { minLength: 2, maxLength: 80 });
+    for (const field of ['location', 'bio', 'avatar']) {
+        if (data[field] !== undefined && typeof data[field] !== 'string') {
+            throw validationError(`${field} must be a string.`);
+        }
+    }
+    const location = typeof data.location === 'string' ? data.location.trim() : '';
+    const bio = typeof data.bio === 'string' ? data.bio.trim() : '';
+    const avatar = typeof data.avatar === 'string' ? data.avatar.trim() : '';
+    if (location.length > 120) throw validationError('Location must be 120 characters or fewer.');
+    if (bio.length > 500) throw validationError('Bio must be 500 characters or fewer.');
+    if (avatar.length > 2048) throw validationError('Profile picture URL is too long.');
+    if (avatar) {
+        let parsedAvatar;
+        try {
+            parsedAvatar = new URL(avatar);
+        } catch {
+            throw validationError('Profile picture must be a valid HTTP or HTTPS URL.');
+        }
+        if (!['http:', 'https:'].includes(parsedAvatar.protocol)) {
+            throw validationError('Profile picture must be a valid HTTP or HTTPS URL.');
+        }
+    }
+
+    const skillLevel = data.skillLevel;
+    if (!['Beginner', 'Intermediate', 'Advanced', 'All Levels'].includes(skillLevel)) {
+        throw validationError('Skill level is invalid.');
+    }
+
+    if (!Array.isArray(data.positions) || data.positions.length > 8) {
+        throw validationError('Positions must be an array with at most 8 entries.');
+    }
+    const positions = [
+        ...new Set(data.positions.map((position) => ensureString(position, 'Position', { maxLength: 40 }))),
+    ];
+
+    return { displayName, avatar, bio, location, skillLevel, positions };
+}
+
 function validateEmailRequestInput(data = {}) {
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
         throw validationError('Email payload must be a valid object.');
@@ -163,6 +207,7 @@ function validateGameInput(data = {}) {
 module.exports = {
     validateRegistrationInput,
     validateLoginInput,
+    validateProfileInput,
     validateEmailRequestInput,
     validateVerificationTokenInput,
     validatePasswordResetInput,

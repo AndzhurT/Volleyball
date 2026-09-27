@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
 const User = require('../models/User');
+const Profile = require('../models/Profile');
 const AdminInvite = require('../models/AdminInvite');
 const AuthIdentity = require('../models/AuthIdentity');
 const OAuthLogin = require('../models/OAuthLogin');
@@ -404,6 +405,7 @@ router.post('/register', async (req, res, next) => {
         }
 
         const user = await User.create({ username, email, password, role, emailVerified: false });
+        await Profile.ensureForUser(user);
 
         res.status(201).json({
             message: 'User created',
@@ -411,6 +413,7 @@ router.post('/register', async (req, res, next) => {
         });
     } catch (err) {
         next(err);
+        await Profile.ensureForUser(user);
     }
 });
 

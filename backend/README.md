@@ -72,6 +72,10 @@ docker compose up --build
 | GET    | `/api/auth/oauth/facebook`         | None           | Start Facebook OAuth login                            |
 | POST   | `/api/auth/oauth/exchange`         | None           | Exchange a one-time OAuth callback code               |
 | POST   | `/api/auth/invite-admin`           | Admin JWT      | Generate a one-time invite token for a new admin      |
+| GET    | `/api/profiles`                    | None           | List public player profiles                           |
+| GET    | `/api/profiles/:userId`            | None           | Read a public player profile                          |
+| GET    | `/api/profiles/me`                 | User JWT       | Read the current user's profile                       |
+| PUT    | `/api/profiles/me`                 | User JWT       | Edit the current user's profile                       |
 | GET    | `/api/games`                       | Optional JWT   | List games; hides addresses without a JWT             |
 | GET    | `/api/games/:id`                   | Optional JWT   | Get a game; hides address and coordinates without JWT |
 | POST   | `/api/games`                       | Admin JWT      | Create a game directly                                |
@@ -93,6 +97,10 @@ Protected requests use this header:
 ```text
 Authorization: Bearer <token>
 ```
+
+Registration creates a default profile using the account username as its display name.
+Profile reads expose only public profile fields; editing is restricted to `/api/profiles/me`
+and never accepts request history or account-role fields from the client.
 
 ## Admin registration flow
 

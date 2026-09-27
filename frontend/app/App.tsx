@@ -6,17 +6,23 @@ import { Dashboard } from './components/dashboard';
 import { MapView } from './components/map-view';
 import { ProfileView } from './components/profile-view';
 import { CreateGameDialog } from './components/create-game-dialog';
+import { EditProfileDialog } from './components/edit-profile-dialog';
 import { AuthDialog } from './components/auth-dialog';
 import { PlayersViewOption1 } from './components/players-view-option1';
 import { useAuth } from './context/AuthContext';
 import {
     createGameActionRequest,
     deleteMyGameActionRequest,
+    getProfile,
+    getProfiles,
     getMyGameActionRequests,
     getStoredAuthToken,
     updateMyGameActionRequest,
+    updateMyProfile,
     type GameActionRequest,
     type GameActionRequestInput,
+    type UserProfile,
+    type UserProfileInput,
 } from './lib/auth-api';
 
 import type { Game } from './components/game-card';
@@ -29,15 +35,84 @@ type GameWithCoords = Game & {
     longitude: number;
 };
 
+function toDirectoryPlayer(profile: UserProfile): Player {
+    return {
+        id: profile.id,
+        name: profile.displayName || profile.username,
+        avatar: profile.avatar || undefined,
+        location: profile.location || 'Location not set',
+        skillLevel: profile.skillLevel,
+        positions: profile.positions,
+        gamesPlayed: profile.gamesPlayed,
+        rating: profile.rating,
+        bio: profile.bio,
+    };
+}
+
+function toProfilePlayer(profile: UserProfile) {
+    return {
+        ...toDirectoryPlayer(profile),
+        gamesAttended: [],
+        followers: [],
+        following: [],
+        achievements: [],
+        reviews: [],
+        stats: profile.stats,
+    };
+}
+
 function App() {
     const [currentView, setCurrentView] = useState<View>('dashboard');
+    const [viewedProfileId, setViewedProfileId] = useState<string | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+    const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+    const [profiles, setProfiles] = useState<Player[]>([]);
+    const [profileData, setProfileData] = useState<UserProfile | null>(null);
+    const [isProfileLoading, setIsProfileLoading] = useState(false);
+    const [profileError, setProfileError] = useState('');
     const [requestToEdit, setRequestToEdit] = useState<GameActionRequest | null>(null);
     const [gameActionRequests, setGameActionRequests] = useState<GameActionRequest[]>([]);
     const [areRequestsLoading, setAreRequestsLoading] = useState(false);
     const { user: authUser, isLoading: isAuthLoading, setAuthenticatedUser, logout } = useAuth();
     const isLoggedIn = authUser !== null;
+
+    useEffect(() => {
+        let cancelled = false;
+        getProfiles()
+            .then((response) => {
+                if (!cancelled) setProfiles(response.data.map(toDirectoryPlayer));
+            })
+            .catch((error) => console.error('Unable to load player profiles:', error));
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        const profileId = viewedProfileId || authUser?.id;
+        if (currentView !== 'profile' || !profileId) return;
+
+        let cancelled = false;
+        setIsProfileLoading(true);
+        setProfileError('');
+        getProfile(profileId)
+            .then((response) => {
+                if (!cancelled) setProfileData(response.profile);
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    setProfileError(error instanceof Error ? error.message : 'Unable to load this profile.');
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setIsProfileLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [currentView, viewedProfileId, authUser?.id]);
 
     const refreshGameActionRequests = async () => {
         const token = getStoredAuthToken();
@@ -204,86 +279,6 @@ function App() {
         },
     ];
 
-    const mockPlayers: Player[] = [
-        {
-            id: 'p1',
-            name: 'Sarah Johnson',
-            avatar: 'https://images.unsplash.com/photo-1695918428487-7934244c19ac?w=200&h=200&fit=crop',
-            location: 'Downtown',
-            skillLevel: 'Advanced',
-            positions: ['Outside Hitter', 'Setter'],
-            gamesPlayed: 156,
-            rating: 4.8,
-            bio: 'Passionate volleyball player with 8 years of experience. Love competitive games and meeting new people!',
-            isFollowing: false,
-        },
-        {
-            id: 'p2',
-            name: 'Mike Chen',
-            avatar: '',
-            location: 'North District',
-            skillLevel: 'Intermediate',
-            positions: ['Middle Blocker'],
-            gamesPlayed: 89,
-            rating: 4.3,
-            bio: 'Looking to improve my blocking skills and play more competitive games.',
-            isFollowing: false,
-        },
-        {
-            id: 'p3',
-            name: 'Emma Davis',
-            avatar: '',
-            location: 'West Side',
-            skillLevel: 'Intermediate',
-            positions: ['Libero', 'Defensive Specialist'],
-            gamesPlayed: 124,
-            rating: 4.6,
-            bio: 'Defense is my specialty! Always ready for a good game.',
-            isFollowing: true,
-        },
-        {
-            id: 'p4',
-            name: 'Alex Rivera',
-            avatar: '',
-            location: 'East Bay',
-            skillLevel: 'Beginner',
-            positions: ['Learning All'],
-            gamesPlayed: 23,
-            rating: 3.9,
-            bio: 'New to volleyball but loving every minute of it!',
-            isFollowing: false,
-        },
-    ];
-
-    const currentUser: Player & any = {
-        id: 'current',
-        name: 'Alex Thompson',
-        avatar: 'https://images.unsplash.com/photo-1695918428487-7934244c19ac?w=200&h=200&fit=crop',
-        location: 'San Francisco, CA',
-        skillLevel: 'Intermediate' as const,
-        positions: ['Outside Hitter', 'Setter'],
-        gamesPlayed: 87,
-        rating: 4.5,
-        bio: 'Volleyball enthusiast looking to connect with local players and improve my game!',
-        gamesAttended: mockGames.slice(0, 3),
-        followers: mockPlayers.slice(0, 2),
-        following: mockPlayers.slice(2, 4),
-        achievements: [
-            { title: 'First Game Completed', icon: 'trophy', date: 'Earned 3 months ago' },
-            { title: 'Team Player', icon: 'users', date: 'Earned 2 months ago' },
-            { title: 'Perfect Attendance', icon: 'calendar', date: 'Earned 1 month ago' },
-            { title: 'Top Rated Player', icon: 'star', date: 'Earned 2 weeks ago' },
-            { title: 'Community Leader', icon: 'award', date: 'Earned 1 week ago' },
-            { title: '50 Games Milestone', icon: 'trophy', date: 'Earned 3 days ago' },
-        ],
-        stats: {
-            winRate: 67,
-            hoursPlayed: 145,
-            favoritePosition: 'Outside Hitter',
-            memberSince: 'March 2025',
-        },
-    };
-
     const handleCreateGame = async (gameData: GameActionRequestInput, requestId?: string) => {
         const token = getStoredAuthToken();
         if (!token) throw new Error('Please sign in again before submitting a game request.');
@@ -333,11 +328,35 @@ function App() {
 
     const handleViewProfile = (playerId: string) => {
         console.log('View profile:', playerId);
+        setViewedProfileId(playerId);
         setCurrentView('profile');
+    };
+
+    const handleOpenOwnProfile = () => {
+        if (!authUser) {
+            setIsAuthDialogOpen(true);
+            return;
+        }
+        setViewedProfileId(authUser.id);
+        setCurrentView('profile');
+    };
+
+    const handleSaveProfile = async (profile: UserProfileInput) => {
+        const token = getStoredAuthToken();
+        if (!token) throw new Error('Please sign in again before editing your profile.');
+        const response = await updateMyProfile(token, profile);
+        setProfileData(response.profile);
+        setProfiles((currentProfiles) =>
+            currentProfiles.map((player) =>
+                player.id === response.profile.id ? toDirectoryPlayer(response.profile) : player,
+            ),
+        );
     };
 
     const handleLogout = async () => {
         await logout();
+        setViewedProfileId(null);
+        setProfileData(null);
         setCurrentView('dashboard');
     };
 
@@ -399,7 +418,7 @@ function App() {
                                     <Button
                                         variant={currentView === 'profile' ? 'default' : 'ghost'}
                                         size="icon"
-                                        onClick={() => setCurrentView('profile')}>
+                                        onClick={handleOpenOwnProfile}>
                                         <User className="w-5 h-5" />
                                     </Button>
                                     <Button
@@ -437,7 +456,7 @@ function App() {
                         onFindGames={handleFindGames}
                         upcomingGames={mockGames.slice(0, 3)}
                         nearbyGames={mockGames}
-                        suggestedPlayers={mockPlayers}
+                        suggestedPlayers={profiles.slice(0, 4)}
                         onRSVP={handleRSVP}
                         onViewGameDetails={handleViewGameDetails}
                         onConnect={handleConnect}
@@ -463,29 +482,38 @@ function App() {
                         />
                     ))}
 
-                {currentView === 'profile' && (
-                    <ProfileView
-                        isOwnProfile={true}
-                        player={currentUser}
-                        upcomingGames={mockGames.slice(0, 3)}
-                        gameActionRequests={gameActionRequests}
-                        areRequestsLoading={areRequestsLoading}
-                        showGameLocations={isLoggedIn}
-                        onEditGameRequest={(request) => {
-                            setRequestToEdit(request);
-                            setIsCreateDialogOpen(true);
-                        }}
-                        onDeleteGameRequest={handleDeleteGameRequest}
-                        onEditProfile={() => console.log('Edit profile')}
-                        onConnect={handleConnect}
-                        onRSVP={handleRSVP}
-                        onViewGameDetails={handleViewGameDetails}
-                    />
-                )}
+                {currentView === 'profile' &&
+                    (isProfileLoading ? (
+                        <p className="text-muted-foreground">Loading profile...</p>
+                    ) : profileError ? (
+                        <p role="alert" className="text-destructive">
+                            {profileError}
+                        </p>
+                    ) : profileData ? (
+                        <ProfileView
+                            isOwnProfile={!!authUser && profileData.id === authUser.id}
+                            player={toProfilePlayer(profileData)}
+                            upcomingGames={[]}
+                            gameActionRequests={profileData.id === authUser?.id ? gameActionRequests : []}
+                            areRequestsLoading={profileData.id === authUser?.id && areRequestsLoading}
+                            showGameLocations={isLoggedIn}
+                            onEditGameRequest={(request) => {
+                                setRequestToEdit(request);
+                                setIsCreateDialogOpen(true);
+                            }}
+                            onDeleteGameRequest={handleDeleteGameRequest}
+                            onEditProfile={() => setIsEditProfileOpen(true)}
+                            onConnect={handleConnect}
+                            onRSVP={handleRSVP}
+                            onViewGameDetails={handleViewGameDetails}
+                        />
+                    ) : (
+                        <p className="text-muted-foreground">Profile not found.</p>
+                    ))}
 
                 {currentView === 'browse' && (
                     <PlayersViewOption1
-                        players={mockPlayers}
+                        players={profiles}
                         onConnect={handleConnect}
                         onViewProfile={handleViewProfile}
                     />
@@ -502,6 +530,15 @@ function App() {
                 requestToEdit={requestToEdit}
                 onCreateGame={handleCreateGame}
             />
+
+            {profileData && profileData.id === authUser?.id && (
+                <EditProfileDialog
+                    open={isEditProfileOpen}
+                    onOpenChange={setIsEditProfileOpen}
+                    profile={profileData}
+                    onSave={handleSaveProfile}
+                />
+            )}
 
             {/* Mobile Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t-2 border-border/30 bg-card/95 backdrop-blur-sm">
@@ -529,7 +566,7 @@ function App() {
                     </Button>
                     <Button
                         variant={currentView === 'profile' ? 'default' : 'ghost'}
-                        onClick={() => setCurrentView('profile')}
+                        onClick={handleOpenOwnProfile}
                         className={`flex-col h-auto py-2 ${currentView === 'profile' ? 'bg-primary text-primary-foreground' : ''}`}>
                         <User className="w-5 h-5 mb-1" />
                         <span className="text-xs">Profile</span>

@@ -1,7 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { validateRegistrationInput, validateLoginInput, validateGameInput } = require('../utils/validation');
+const {
+    validateRegistrationInput,
+    validateLoginInput,
+    validateGameInput,
+    validateProfileInput,
+} = require('../utils/validation');
 
 test('registration rejects user-controlled admin privilege escalation', () => {
     assert.throws(
@@ -37,6 +42,34 @@ test('login requires valid credentials shape', () => {
     assert.throws(
         () => validateLoginInput({ email: 'alice@example.com', password: '' }),
         /Password must be between 1 and 128 characters/,
+    );
+});
+
+test('profile validation rejects unsafe avatar URLs and invalid skill levels', () => {
+    assert.throws(
+        () =>
+            validateProfileInput({
+                displayName: 'Alex Player',
+                avatar: 'javascript:alert(1)',
+                location: '',
+                bio: '',
+                skillLevel: 'Advanced',
+                positions: [],
+            }),
+        /HTTP or HTTPS/i,
+    );
+
+    assert.throws(
+        () =>
+            validateProfileInput({
+                displayName: 'Alex Player',
+                avatar: '',
+                location: '',
+                bio: '',
+                skillLevel: 'Expert',
+                positions: [],
+            }),
+        /Skill level is invalid/i,
     );
 });
 

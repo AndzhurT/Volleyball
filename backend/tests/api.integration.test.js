@@ -6,6 +6,7 @@ const app = require('../index');
 const { connectDB } = require('../config/db');
 const User = require('../models/User');
 const Game = require('../models/Game');
+const Profile = require('../models/Profile');
 const GameActionRequest = require('../models/GameActionRequest');
 const AuthIdentity = require('../models/AuthIdentity');
 const OAuthLogin = require('../models/OAuthLogin');
@@ -45,8 +46,10 @@ test.before(async () => {
 });
 
 test.afterEach(async () => {
+    const users = await User.find({ email: { $in: [...createdEmails] } }).select('_id');
     await Promise.all([
         ...Array.from(createdEmails, (email) => User.deleteOne({ email })),
+        Profile.deleteMany({ userId: { $in: users.map((user) => user._id) } }),
         ...Array.from(createdGameIds, (id) => Game.deleteOne({ _id: id })),
         ...Array.from(createdActionRequestIds, (id) => GameActionRequest.deleteOne({ _id: id })),
         ...Array.from(createdIdentityIds, (id) => AuthIdentity.deleteOne({ _id: id })),
@@ -102,6 +105,91 @@ test('a user can register, log in successfully, and restore their session', asyn
     });
     assert.equal(me.status, 200);
     assert.equal((await json(me)).user.id, loginBody.user.id);
+});
+
+test('registration creates a private-editable public profile with safe defaults', async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email = `profile-${suffix}@example.com`;
+    createdEmails.add(email);
+
+    const registration = await request('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username: `profile-${suffix}`, email, password: 'StrongPass123' }),
+    });
+    const registrationBody = await json(registration);
+    assert.equal(registration.status, 201);
+    const userId = registrationBody.user.id;
+
+    const initialProfile = await request(`/api/profiles/${userId}`);
+    const initialProfileBody = await json(initialProfile);
+    assert.equal(initialProfile.status, 200);
+    assert.equal(initialProfileBody.profile.username, `profile-${suffix}`);
+    assert.equal(initialProfileBody.profile.displayName, `profile-${suffix}`);
+    assert.equal(initialProfileBody.profile.skillLevel, 'All Levels');
+    assert.deepEqual(initialProfileBody.profile.positions, []);
+    assert.equal('requests' in initialProfileBody.profile, false);
+    assert.equal('email' in initialProfileBody.profile, false);
+
+    const unauthenticatedEdit = await request('/api/profiles/me', {
+        method: 'PUT',
+        body: JSON.stringify({ displayName: 'Unauthorized', skillLevel: 'Advanced', positions: [] }),
+    });
+    assert.equal(unauthenticatedEdit.status, 401);
+
+    const login = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password: 'StrongPass123' }),
+    });
+    const token = (await json(login)).token;
+    const actionRequest = await request('/api/action-requests', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+            action: 'create',
+            game: {
+                title: `Private Game ${suffix}`,
+                date: '2026-11-02',
+                time: '18:00',
+                location: '123 Private Court',
+                skillLevel: 'Intermediate',
+                totalSpots: 12,
+                type: 'casual',
+                courtType: 'indoor',
+            },
+        }),
+    });
+    const actionRequestBody = await json(actionRequest);
+    assert.equal(actionRequest.status, 201);
+    createdActionRequestIds.add(actionRequestBody._id);
+
+    const edited = await request('/api/profiles/me', {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+            displayName: 'Profile Test Player',
+            avatar: 'https://example.com/player.jpg',
+            bio: 'Ready to play.',
+            location: 'North District',
+            skillLevel: 'Intermediate',
+            positions: ['Setter', 'Libero'],
+            requests: [{ private: 'must not persist' }],
+        }),
+    });
+    const editedBody = await json(edited);
+    assert.equal(edited.status, 200);
+    assert.equal(editedBody.profile.displayName, 'Profile Test Player');
+    assert.equal(editedBody.profile.location, 'North District');
+    assert.equal('requests' in editedBody.profile, false);
+
+    const publicProfile = await request(`/api/profiles/${userId}`);
+    const publicProfileBody = await json(publicProfile);
+    assert.equal(publicProfileBody.profile.skillLevel, 'Intermediate');
+    assert.equal('requests' in publicProfileBody.profile, false);
+    assert.equal('actionRequests' in publicProfileBody.profile, false);
+    assert.equal('email' in publicProfileBody.profile, false);
+    assert.equal(JSON.stringify(publicProfileBody).includes(actionRequestBody._id), false);
+    const profiles = await request('/api/profiles');
+    assert.ok((await json(profiles)).data.some((profile) => profile.id === userId));
 });
 
 test('duplicate email and username accounts are rejected', async () => {

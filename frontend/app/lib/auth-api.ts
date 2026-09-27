@@ -38,6 +38,39 @@ export interface GameActionRequestInput {
     courtType: 'indoor' | 'outdoor' | 'beach';
 }
 
+export interface UserProfile {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar: string;
+    bio: string;
+    location: string;
+    skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
+    positions: string[];
+    gamesPlayed: number;
+    rating: number;
+    reviews: [];
+    gamesAttended: [];
+    followers: [];
+    following: [];
+    achievements: [];
+    stats: {
+        winRate: number;
+        hoursPlayed: number;
+        favoritePosition: string;
+        memberSince: string;
+    };
+}
+
+export interface UserProfileInput {
+    displayName: string;
+    avatar: string;
+    bio: string;
+    location: string;
+    skillLevel: UserProfile['skillLevel'];
+    positions: string[];
+}
+
 interface AuthResponse {
     token: string;
     user: AuthUser;
@@ -183,6 +216,25 @@ export function deleteMyGameActionRequest(token: string, requestId: string) {
         `/api/action-requests/${encodeURIComponent(requestId)}`,
         {
             method: 'DELETE',
+        },
+        token,
+    );
+}
+
+export function getProfiles() {
+    return request<{ data: UserProfile[] }>('/api/profiles', { method: 'GET' });
+}
+
+export function getProfile(userId: string) {
+    return request<{ profile: UserProfile }>(`/api/profiles/${encodeURIComponent(userId)}`, { method: 'GET' });
+}
+
+export function updateMyProfile(token: string, profile: UserProfileInput) {
+    return request<{ profile: UserProfile }>(
+        '/api/profiles/me',
+        {
+            method: 'PUT',
+            body: JSON.stringify(profile),
         },
         token,
     );
