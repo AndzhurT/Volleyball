@@ -34,6 +34,7 @@ export function CreateGameDialog({ open, onOpenChange, requestToEdit, onCreateGa
         location: '',
         skillLevel: 'All Levels',
         totalSpots: '12',
+        durationMinutes: 90,
         type: 'casual',
         courtType: 'indoor',
         description: '',
@@ -62,6 +63,7 @@ export function CreateGameDialog({ open, onOpenChange, requestToEdit, onCreateGa
             location: '',
             skillLevel: 'All Levels',
             totalSpots: '12',
+            durationMinutes: 90,
             type: 'casual',
             courtType: 'indoor',
             description: '',
@@ -178,6 +180,25 @@ export function CreateGameDialog({ open, onOpenChange, requestToEdit, onCreateGa
                                     required
                                     className="bg-input-background border-border focus:border-primary"
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="durationMinutes">Approximate game length</Label>
+                                <Select
+                                    value={String(formData.durationMinutes)}
+                                    onValueChange={(value) =>
+                                        setFormData({ ...formData, durationMinutes: Number(value) })
+                                    }>
+                                    <SelectTrigger id="durationMinutes" className="bg-input-background border-border">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="60">About 1 hour</SelectItem>
+                                        <SelectItem value="90">About 1.5 hours</SelectItem>
+                                        <SelectItem value="120">About 2 hours</SelectItem>
+                                        <SelectItem value="180">About 3 hours</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

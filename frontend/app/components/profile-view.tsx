@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { GameCard, type Game } from './game-card';
 import { PlayerCard, type Player } from './player-card';
 import { Textarea } from './ui/textarea';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GameActionRequest } from '../lib/auth-api';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -46,6 +47,8 @@ interface ProfileViewProps {
         };
     };
     upcomingGames?: Game[];
+    ongoingGames?: Game[];
+    pastGames?: Game[];
     gameActionRequests?: GameActionRequest[];
     areRequestsLoading?: boolean;
     showGameLocations?: boolean;
@@ -61,6 +64,8 @@ export function ProfileView({
     isOwnProfile = false,
     player,
     upcomingGames = [],
+    ongoingGames = [],
+    pastGames = [],
     gameActionRequests = [],
     areRequestsLoading = false,
     showGameLocations = true,
@@ -75,6 +80,44 @@ export function ProfileView({
     const [newRating, setNewRating] = useState(5);
     const [requestToDelete, setRequestToDelete] = useState<GameActionRequest | null>(null);
     const [requestActionError, setRequestActionError] = useState('');
+    const [openGameList, setOpenGameList] = useState<'upcoming' | 'past' | null>(null);
+    const [visibleGameCount, setVisibleGameCount] = useState(10);
+    const gameListScrollRef = useRef<HTMLDivElement>(null);
+    const gameListSentinelRef = useRef<HTMLDivElement>(null);
+
+    const sortedUpcomingGames = [...upcomingGames].sort((left, right) =>
+        `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`),
+    );
+    const sortedOngoingGames = [...ongoingGames].sort((left, right) =>
+        `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`),
+    );
+    const sortedPastGames = [...pastGames].sort((left, right) =>
+        `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`),
+    );
+    const allGamesInPanel = openGameList === 'upcoming' ? sortedUpcomingGames : sortedPastGames;
+
+    useEffect(() => {
+        const sentinel = gameListSentinelRef.current;
+        const scrollRoot = gameListScrollRef.current;
+        if (!openGameList || !sentinel || !scrollRoot || visibleGameCount >= allGamesInPanel.length) return;
+        if (typeof IntersectionObserver === 'undefined') return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setVisibleGameCount((current) => Math.min(current + 10, allGamesInPanel.length));
+                }
+            },
+            { root: scrollRoot, rootMargin: '160px' },
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [openGameList, visibleGameCount, allGamesInPanel.length]);
+
+    const showGameList = (list: 'upcoming' | 'past') => {
+        setVisibleGameCount(10);
+        setOpenGameList(list);
+    };
 
     const handleSubmitReview = () => {
         console.log('Submitting review:', { rating: newRating, comment: newReview });
@@ -223,10 +266,20 @@ export function ProfileView({
                 <TabsContent value="games" className="space-y-6 mt-6">
                     {isOwnProfile && (
                         <section>
-                            <h2 className="text-2xl mb-4">Your Upcoming Games</h2>
-                            {upcomingGames.length ? (
+                            <div className="mb-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <h2 className="text-2xl">Your Upcoming Games</h2>
+                                    <p className="text-sm text-muted-foreground">Sorted by the earliest start time</p>
+                                </div>
+                                {sortedUpcomingGames.length > 3 && (
+                                    <Button variant="outline" onClick={() => showGameList('upcoming')}>
+                                        View all {sortedUpcomingGames.length}
+                                    </Button>
+                                )}
+                            </div>
+                            {sortedUpcomingGames.length ? (
                                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {upcomingGames.slice(0, 3).map((game) => (
+                                    {sortedUpcomingGames.slice(0, 3).map((game) => (
                                         <GameCard
                                             key={game.id}
                                             game={game}
@@ -242,14 +295,52 @@ export function ProfileView({
                             )}
                         </section>
                     )}
-                    <div>
-                        <h2 className="text-2xl mb-4">Recent Games</h2>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {player.gamesAttended.slice(0, 6).map((game) => (
-                                <GameCard key={game.id} game={game} isJoined={true} showLocation={showGameLocations} />
-                            ))}
+                    {isOwnProfile && sortedOngoingGames.length > 0 && (
+                        <section>
+                            <h2 className="text-2xl mb-4">Ongoing Games</h2>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {sortedOngoingGames.map((game) => (
+                                    <GameCard
+                                        key={game.id}
+                                        game={game}
+                                        isJoined
+                                        showLocation={showGameLocations}
+                                        onViewDetails={onViewGameDetails}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+                    {isOwnProfile && (
+                        <div>
+                            <div className="mb-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <h2 className="text-2xl">Past Games</h2>
+                                    <p className="text-sm text-muted-foreground">Sorted by the earliest start time</p>
+                                </div>
+                                {sortedPastGames.length > 3 && (
+                                    <Button variant="outline" onClick={() => showGameList('past')}>
+                                        View all {sortedPastGames.length}
+                                    </Button>
+                                )}
+                            </div>
+                            {sortedPastGames.length ? (
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {sortedPastGames.slice(0, 3).map((game) => (
+                                        <GameCard
+                                            key={game.id}
+                                            game={game}
+                                            isJoined
+                                            showLocation={showGameLocations}
+                                            onViewDetails={onViewGameDetails}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground">No past games yet.</p>
+                            )}
                         </div>
-                    </div>
+                    )}
                 </TabsContent>
 
                 {isOwnProfile && (
@@ -329,6 +420,53 @@ export function ProfileView({
                         )}
                     </TabsContent>
                 )}
+
+                <Dialog
+                    open={openGameList !== null}
+                    onOpenChange={(open) => {
+                        if (!open) setOpenGameList(null);
+                    }}>
+                    <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-5xl">
+                        <DialogHeader>
+                            <DialogTitle>{openGameList === 'past' ? 'Past Games' : 'Upcoming Games'}</DialogTitle>
+                            <DialogDescription>
+                                {allGamesInPanel.length} joined games, ordered by start time.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div ref={gameListScrollRef} className="min-h-0 flex-1 overflow-y-auto pr-2">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {allGamesInPanel.slice(0, visibleGameCount).map((game) => (
+                                    <GameCard
+                                        key={game.id}
+                                        game={game}
+                                        isJoined
+                                        showLocation={showGameLocations}
+                                        onViewDetails={onViewGameDetails}
+                                    />
+                                ))}
+                            </div>
+                            {visibleGameCount < allGamesInPanel.length && (
+                                <div
+                                    ref={gameListSentinelRef}
+                                    className="py-5 text-center text-sm text-muted-foreground">
+                                    {typeof IntersectionObserver === 'undefined' ? (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() =>
+                                                setVisibleGameCount((current) =>
+                                                    Math.min(current + 10, allGamesInPanel.length),
+                                                )
+                                            }>
+                                            Load 10 more
+                                        </Button>
+                                    ) : (
+                                        'Scroll to load more games'
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 <AlertDialog
                     open={requestToDelete !== null}

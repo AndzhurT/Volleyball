@@ -20,6 +20,8 @@ function serializeGame(game, includeLocation) {
         spotsLeft: Math.max(0, value.totalSpots - participants.length),
         type: value.type,
         courtType: value.courtType,
+        durationMinutes: value.durationMinutes,
+        lifecycleStatus: game.lifecycleStatus || value.lifecycleStatus,
         createdBy: value.createdBy?._id ? String(value.createdBy._id) : String(value.createdBy),
         playersJoined: participants.map((participant) => ({
             id: String(participant._id || participant),
@@ -75,6 +77,18 @@ router.get('/', optionalProtect, async (req, res, next) => {
     }
 });
 
+router.get('/mine', protect, async (req, res, next) => {
+    try {
+        const games = await Game.find({ participants: req.user.id })
+            .populate('createdBy', '_id username')
+            .populate('participants', '_id username')
+            .sort({ date: 1, time: 1 });
+        res.json({ data: games.map((game) => serializeGame(game, true)) });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/:id', optionalProtect, async (req, res, next) => {
     try {
         if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid game ID' });
@@ -122,6 +136,11 @@ router.put('/:id', protect, admin, async (req, res, next) => {
 router.post('/:id/join', protect, async (req, res, next) => {
     try {
         if (!validId(req.params.id)) return res.status(400).json({ message: 'Invalid game ID' });
+        const currentGame = await Game.findById(req.params.id);
+        if (!currentGame) return res.status(404).json({ message: 'Game not found' });
+        if (currentGame.lifecycleStatus === 'ended') {
+            return res.status(409).json({ message: 'This game has already ended' });
+        }
         const result = await Game.updateOne(
             {
                 _id: req.params.id,

@@ -155,6 +155,7 @@ function validateGameInput(data = {}) {
     const type = data.type;
     const courtType = data.courtType;
     const totalSpots = data.totalSpots;
+    const durationMinutes = data.durationMinutes === undefined ? 90 : data.durationMinutes;
 
     if (
         !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
@@ -172,8 +173,11 @@ function validateGameInput(data = {}) {
     if (!Number.isInteger(totalSpots) || totalSpots < 2 || totalSpots > 100) {
         throw validationError('Total spots must be an integer between 2 and 100.');
     }
+    if (!Number.isInteger(durationMinutes) || durationMinutes < 30 || durationMinutes > 360) {
+        throw validationError('Game duration must be an integer between 30 and 360 minutes.');
+    }
 
-    const cleanedGame = { title, date, time, location, skillLevel, type, courtType, totalSpots };
+    const cleanedGame = { title, date, time, location, skillLevel, type, courtType, totalSpots, durationMinutes };
 
     if (data.description !== undefined) {
         if (typeof data.description !== 'string' || data.description.length > 2000) {

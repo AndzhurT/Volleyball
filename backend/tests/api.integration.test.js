@@ -652,6 +652,8 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(created.title, pendingEdit.title);
     assert.equal(created.location, '123 Volleyball Way');
     assert.equal(created.spotsLeft, 1);
+    assert.equal(created.durationMinutes, 90);
+    assert.equal(created.lifecycleStatus, 'upcoming');
 
     const duplicateApproval = await request(`/api/action-requests/${createRequest._id}/approve`, {
         method: 'POST',
@@ -763,6 +765,13 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(join.status, 200);
     assert.equal((await json(join)).spotsLeft, 0);
 
+    const myGames = await request('/api/games/mine', {
+        headers: { authorization: `Bearer ${secondLoginBody.token}` },
+    });
+    const myGamesBody = await json(myGames);
+    assert.equal(myGames.status, 200);
+    assert.ok(myGamesBody.data.some((game) => game.id === created.id));
+
     const fullJoin = await request(`/api/games/${created.id}/join`, {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
@@ -798,6 +807,7 @@ test('admins can create and update games directly while non-owners cannot delete
             coordinates: { type: 'Point', coordinates: [-73.9857, 40.7484] },
             skillLevel: 'All Levels',
             totalSpots: 12,
+            durationMinutes: 30,
             type: 'casual',
             courtType: 'outdoor',
         }),
@@ -854,6 +864,57 @@ test('admins can create and update games directly while non-owners cannot delete
         await Game.deleteOne({ _id: created.id });
         createdGameIds.delete(created.id);
     }
+});
+
+test('users cannot join games whose duration has already ended', async () => {
+    const adminLogin = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(adminCredentials),
+    });
+    const adminToken = (await json(adminLogin)).token;
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email = `ended-game-${suffix}@example.com`;
+    createdEmails.add(email);
+
+    await request('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username: `ended-${suffix}`, email, password: 'StrongPass123' }),
+    });
+    const userLogin = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password: 'StrongPass123' }),
+    });
+    const userToken = (await json(userLogin)).token;
+
+    const startsAt = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const date = startsAt.toISOString().slice(0, 10);
+    const time = startsAt.toISOString().slice(11, 16);
+    const gameResponse = await request('/api/games', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({
+            title: `Ended Game ${suffix}`,
+            date,
+            time,
+            location: '123 Past Game Avenue',
+            skillLevel: 'All Levels',
+            totalSpots: 10,
+            durationMinutes: 60,
+            type: 'casual',
+            courtType: 'outdoor',
+        }),
+    });
+    const game = await json(gameResponse);
+    assert.equal(gameResponse.status, 201);
+    createdGameIds.add(game.id);
+    assert.equal(game.lifecycleStatus, 'ended');
+
+    const join = await request(`/api/games/${game.id}/join`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${userToken}` },
+    });
+    assert.equal(join.status, 409);
+    assert.match((await json(join)).message, /ended/i);
 });
 
 test('configured frontend origins can preflight API requests but other origins are rejected', async () => {

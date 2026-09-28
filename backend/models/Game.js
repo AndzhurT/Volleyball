@@ -19,6 +19,7 @@ const gameSchema = new mongoose.Schema(
         totalSpots: { type: Number, min: 2, max: 100, required: true },
         type: { type: String, enum: ['casual', 'competitive'], required: true },
         courtType: { type: String, enum: ['indoor', 'outdoor', 'beach'], required: true },
+        durationMinutes: { type: Number, min: 30, max: 360, default: 90, required: true },
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     },
@@ -28,6 +29,14 @@ const gameSchema = new mongoose.Schema(
 gameSchema.virtual('spotsLeft').get(function () {
     const taken = Array.isArray(this.participants) ? this.participants.length : 0;
     return this.totalSpots - taken;
+});
+
+gameSchema.virtual('lifecycleStatus').get(function () {
+    const startsAt = Date.parse(`${this.date}T${this.time}:00Z`);
+    if (!Number.isFinite(startsAt)) return 'upcoming';
+    const now = Date.now();
+    if (now < startsAt) return 'upcoming';
+    return now < startsAt + this.durationMinutes * 60_000 ? 'ongoing' : 'ended';
 });
 
 gameSchema.index({ date: 1, time: 1 });

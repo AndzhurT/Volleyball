@@ -77,6 +77,7 @@ docker compose up --build
 | GET    | `/api/profiles/me`                 | User JWT       | Read the current user's profile                       |
 | PUT    | `/api/profiles/me`                 | User JWT       | Edit the current user's profile                       |
 | GET    | `/api/games`                       | Optional JWT   | List games; hides addresses without a JWT             |
+| GET    | `/api/games/mine`                  | User JWT       | List games the current user has joined                |
 | GET    | `/api/games/:id`                   | Optional JWT   | Get a game; hides address and coordinates without JWT |
 | POST   | `/api/games`                       | Admin JWT      | Create a game directly                                |
 | PUT    | `/api/games/:id`                   | Admin JWT      | Update a game directly                                |
@@ -246,6 +247,7 @@ curl -X POST "$BASE_URL/api/games" \
     "description": "Friendly intermediate game.",
     "skillLevel": "Intermediate",
     "totalSpots": 12,
+    "durationMinutes": 90,
     "type": "casual",
     "courtType": "indoor"
   }'
@@ -253,7 +255,9 @@ curl -X POST "$BASE_URL/api/games" \
 
 Direct game creation is restricted to administrators. Regular users submit creation
 proposals through the action-request API below. Dates use `YYYY-MM-DD`, times use 24-hour
-`HH:MM`, and coordinates use `[longitude, latitude]` order.
+`HH:MM`, and coordinates use `[longitude, latitude]` order. `durationMinutes` is an
+approximate length from 30 to 360 minutes and defaults to 90. Game responses include a
+computed `lifecycleStatus`: `upcoming`, `ongoing`, or `ended`.
 
 ### Submit a game action request
 

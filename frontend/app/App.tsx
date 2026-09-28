@@ -7,22 +7,38 @@ import { MapView } from './components/map-view';
 import { ProfileView } from './components/profile-view';
 import { CreateGameDialog } from './components/create-game-dialog';
 import { EditProfileDialog } from './components/edit-profile-dialog';
+import { GameDetailsDialog } from './components/game-details-dialog';
 import { AuthDialog } from './components/auth-dialog';
 import { PlayersViewOption1 } from './components/players-view-option1';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from './components/ui/alert-dialog';
 import { useAuth } from './context/AuthContext';
 import {
     createGameActionRequest,
     deleteMyGameActionRequest,
+    getGame,
+    getGames,
     getProfile,
     getProfiles,
+    getMyGames,
     getMyGameActionRequests,
     getStoredAuthToken,
+    joinGame,
     updateMyGameActionRequest,
     updateMyProfile,
     type GameActionRequest,
     type GameActionRequestInput,
     type UserProfile,
     type UserProfileInput,
+    type GameRecord,
 } from './lib/auth-api';
 
 import type { Game } from './components/game-card';
@@ -31,9 +47,23 @@ import type { Player } from './components/player-card';
 type View = 'dashboard' | 'map' | 'profile' | 'browse';
 
 type GameWithCoords = Game & {
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
 };
+
+function toUiGame(record: GameRecord): GameWithCoords {
+    const coordinates = record.coordinates?.coordinates;
+    return {
+        ...record,
+        location: record.location || '',
+        latitude: coordinates?.[1],
+        longitude: coordinates?.[0],
+    };
+}
+
+function compareGameStart(left: Game, right: Game) {
+    return `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`);
+}
 
 function toDirectoryPlayer(profile: UserProfile): Player {
     return {
@@ -68,6 +98,16 @@ function App() {
     const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [profiles, setProfiles] = useState<Player[]>([]);
+    const [games, setGames] = useState<GameWithCoords[]>([]);
+    const [myGames, setMyGames] = useState<GameWithCoords[]>([]);
+    const [isGameLoading, setIsGameLoading] = useState(false);
+    const [rsvpGame, setRsvpGame] = useState<GameWithCoords | null>(null);
+    const [isRsvpConfirmOpen, setIsRsvpConfirmOpen] = useState(false);
+    const [isJoiningGame, setIsJoiningGame] = useState(false);
+    const [rsvpError, setRsvpError] = useState('');
+    const [detailsGame, setDetailsGame] = useState<GameWithCoords | null>(null);
+    const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+    const [detailsError, setDetailsError] = useState('');
     const [profileData, setProfileData] = useState<UserProfile | null>(null);
     const [isProfileLoading, setIsProfileLoading] = useState(false);
     const [profileError, setProfileError] = useState('');
@@ -88,6 +128,28 @@ function App() {
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        if (isAuthLoading) return;
+        let cancelled = false;
+        const token = getStoredAuthToken() || undefined;
+        setIsGameLoading(true);
+        Promise.all([getGames(token), token ? getMyGames(token) : Promise.resolve({ data: [] as GameRecord[] })])
+            .then(([gameResponse, myGameResponse]) => {
+                if (cancelled) return;
+                setGames(gameResponse.data.map(toUiGame));
+                setMyGames(myGameResponse.data.map(toUiGame));
+            })
+            .catch((error) => {
+                if (!cancelled) console.error('Unable to load games:', error);
+            })
+            .finally(() => {
+                if (!cancelled) setIsGameLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [authUser?.id, isAuthLoading]);
 
     useEffect(() => {
         const profileId = viewedProfileId || authUser?.id;
@@ -162,122 +224,9 @@ function App() {
         setCurrentView('map');
     };
 
-    // Mock Data
-    const mockGames: GameWithCoords[] = [
-        {
-            id: '1',
-            title: 'Saturday Morning Volleyball',
-            date: 'Jan 11, 2026',
-            time: '9:00 AM',
-            location: 'Downtown Sports Center',
-            latitude: 39.9526,
-            longitude: -75.1652,
-            distance: '1.2 mi',
-            skillLevel: 'Intermediate',
-            spotsLeft: 3,
-            totalSpots: 12,
-            type: 'casual',
-            courtType: 'indoor',
-            playersJoined: [
-                {
-                    id: 'p1',
-                    name: 'Sarah J',
-                    avatar: 'https://images.unsplash.com/photo-1695918428487-7934244c19ac?w=100&h=100&fit=crop',
-                },
-                { id: 'p2', name: 'Mike C', avatar: '' },
-                { id: 'p3', name: 'Emma D', avatar: '' },
-            ],
-        },
-        {
-            id: '2',
-            title: 'Competitive Beach Tournament',
-            date: 'Jan 12, 2026',
-            time: '2:00 PM',
-            location: 'Sunset Beach Courts',
-            latitude: 39.9259,
-            longitude: -75.1196,
-            distance: '3.8 mi',
-            skillLevel: 'Advanced',
-            spotsLeft: 1,
-            totalSpots: 8,
-            type: 'competitive',
-            courtType: 'beach',
-            playersJoined: [
-                { id: 'p4', name: 'John D', avatar: '' },
-                { id: 'p5', name: 'Lisa M', avatar: '' },
-            ],
-        },
-        {
-            id: '3',
-            title: 'Beginner Friendly Game',
-            date: 'Jan 13, 2026',
-            time: '6:30 PM',
-            location: 'Community Recreation Center',
-            latitude: 40.0379,
-            longitude: -75.2223,
-            distance: '0.8 mi',
-            skillLevel: 'Beginner',
-            spotsLeft: 6,
-            totalSpots: 12,
-            type: 'casual',
-            courtType: 'indoor',
-            playersJoined: [{ id: 'p6', name: 'Alex K', avatar: '' }],
-        },
-        {
-            id: '4',
-            title: 'Sunday Afternoon Social',
-            date: 'Jan 14, 2026',
-            time: '3:00 PM',
-            location: 'Riverside Park',
-            latitude: 39.9784,
-            longitude: -75.1579,
-            distance: '2.1 mi',
-            skillLevel: 'All Levels',
-            spotsLeft: 8,
-            totalSpots: 16,
-            type: 'casual',
-            courtType: 'outdoor',
-            playersJoined: [
-                { id: 'p7', name: 'Chris P', avatar: '' },
-                { id: 'p8', name: 'Taylor R', avatar: '' },
-            ],
-        },
-        {
-            id: '5',
-            title: 'Competitive Indoor League',
-            date: 'Jan 15, 2026',
-            time: '7:00 PM',
-            location: 'Elite Volleyball Arena',
-            latitude: 39.961,
-            longitude: -75.199,
-            distance: '4.5 mi',
-            skillLevel: 'Advanced',
-            spotsLeft: 0,
-            totalSpots: 10,
-            type: 'competitive',
-            courtType: 'indoor',
-            playersJoined: [
-                { id: 'p9', name: 'Jordan B', avatar: '' },
-                { id: 'p10', name: 'Morgan S', avatar: '' },
-            ],
-        },
-        {
-            id: '6',
-            title: 'Wednesday Night Pick-up',
-            date: 'Jan 17, 2026',
-            time: '8:00 PM',
-            location: 'City Sports Complex',
-            latitude: 39.947,
-            longitude: -75.143,
-            distance: '1.5 mi',
-            skillLevel: 'Intermediate',
-            spotsLeft: 4,
-            totalSpots: 12,
-            type: 'casual',
-            courtType: 'indoor',
-            playersJoined: [{ id: 'p11', name: 'Sam W', avatar: '' }],
-        },
-    ];
+    const handleFindPlayers = () => {
+        setCurrentView('browse');
+    };
 
     const handleCreateGame = async (gameData: GameActionRequestInput, requestId?: string) => {
         const token = getStoredAuthToken();
@@ -312,13 +261,52 @@ function App() {
             setIsAuthDialogOpen(true);
             return;
         }
-        console.log('RSVP to game:', gameId);
-        // In a real app, this would send to backend
+        const game = games.find((item) => item.id === gameId);
+        if (!game || myGames.some((item) => item.id === gameId) || game.lifecycleStatus === 'ended') return;
+        setRsvpError('');
+        setRsvpGame(game);
+        setIsRsvpConfirmOpen(true);
     };
 
-    const handleViewGameDetails = (gameId: string) => {
-        console.log('View game details:', gameId);
-        // Could open a modal or navigate to details page
+    const confirmJoinGame = async () => {
+        const token = getStoredAuthToken();
+        if (!token || !rsvpGame) return;
+        setIsJoiningGame(true);
+        setRsvpError('');
+        try {
+            const joinedGame = toUiGame(await joinGame(token, rsvpGame.id));
+            setGames((current) => current.map((game) => (game.id === joinedGame.id ? joinedGame : game)));
+            setMyGames((current) => [joinedGame, ...current.filter((game) => game.id !== joinedGame.id)]);
+            setIsRsvpConfirmOpen(false);
+            setRsvpGame(null);
+        } catch (error) {
+            setRsvpError(error instanceof Error ? error.message : 'Unable to join this game.');
+        } finally {
+            setIsJoiningGame(false);
+        }
+    };
+
+    const handleViewGameDetails = async (gameId: string) => {
+        if (!isLoggedIn) {
+            setIsAuthDialogOpen(true);
+            return;
+        }
+        const token = getStoredAuthToken();
+        if (!token) {
+            setIsAuthDialogOpen(true);
+            return;
+        }
+        setDetailsError('');
+        setIsDetailsLoading(true);
+        setDetailsGame(games.find((game) => game.id === gameId) || null);
+        try {
+            const record = await getGame(token, gameId);
+            setDetailsGame(toUiGame(record));
+        } catch (error) {
+            setDetailsError(error instanceof Error ? error.message : 'Unable to load game details.');
+        } finally {
+            setIsDetailsLoading(false);
+        }
     };
 
     const handleConnect = (playerId: string) => {
@@ -360,6 +348,9 @@ function App() {
         setCurrentView('dashboard');
     };
 
+    const gamesSortedByStart = [...games].sort(compareGameStart);
+    const myGamesSortedByStart = [...myGames].sort(compareGameStart);
+
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
@@ -392,7 +383,7 @@ function App() {
                             </Button>
                             <Button
                                 variant={currentView === 'browse' ? 'default' : 'ghost'}
-                                onClick={() => setCurrentView('browse')}
+                                onClick={handleFindPlayers}
                                 className={currentView === 'browse' ? 'bg-primary text-primary-foreground' : ''}>
                                 <Users className="w-4 h-4 mr-2" />
                                 Players
@@ -454,8 +445,11 @@ function App() {
                         username={authUser?.username}
                         onLogin={() => setIsAuthDialogOpen(true)}
                         onFindGames={handleFindGames}
-                        upcomingGames={mockGames.slice(0, 3)}
-                        nearbyGames={mockGames}
+                        onFindPlayers={handleFindPlayers}
+                        upcomingGames={myGamesSortedByStart.filter((game) => game.lifecycleStatus === 'upcoming')}
+                        nearbyGames={gamesSortedByStart}
+                        joinedGameIds={myGames.map((game) => game.id)}
+                        isGameLoading={isGameLoading}
                         suggestedPlayers={profiles.slice(0, 4)}
                         onRSVP={handleRSVP}
                         onViewGameDetails={handleViewGameDetails}
@@ -466,14 +460,25 @@ function App() {
 
                 {currentView === 'map' &&
                     (isLoggedIn ? (
-                        <MapView games={mockGames} onRSVP={handleRSVP} onViewGameDetails={handleViewGameDetails} />
+                        <MapView
+                            games={gamesSortedByStart.filter(
+                                (game): game is GameWithCoords & { latitude: number; longitude: number } =>
+                                    typeof game.latitude === 'number' && typeof game.longitude === 'number',
+                            )}
+                            joinedGameIds={myGames.map((game) => game.id)}
+                            onRSVP={handleRSVP}
+                            onViewGameDetails={handleViewGameDetails}
+                        />
                     ) : (
                         <Dashboard
                             isLoggedIn={false}
                             onLogin={() => setIsAuthDialogOpen(true)}
                             onFindGames={handleFindGames}
+                            onFindPlayers={handleFindPlayers}
                             upcomingGames={[]}
-                            nearbyGames={[]}
+                            nearbyGames={gamesSortedByStart}
+                            joinedGameIds={[]}
+                            isGameLoading={isGameLoading}
                             suggestedPlayers={[]}
                             onRSVP={handleRSVP}
                             onViewGameDetails={handleViewGameDetails}
@@ -493,7 +498,21 @@ function App() {
                         <ProfileView
                             isOwnProfile={!!authUser && profileData.id === authUser.id}
                             player={toProfilePlayer(profileData)}
-                            upcomingGames={[]}
+                            upcomingGames={
+                                profileData.id === authUser?.id
+                                    ? myGamesSortedByStart.filter((game) => game.lifecycleStatus === 'upcoming')
+                                    : []
+                            }
+                            ongoingGames={
+                                profileData.id === authUser?.id
+                                    ? myGamesSortedByStart.filter((game) => game.lifecycleStatus === 'ongoing')
+                                    : []
+                            }
+                            pastGames={
+                                profileData.id === authUser?.id
+                                    ? myGamesSortedByStart.filter((game) => game.lifecycleStatus === 'ended')
+                                    : []
+                            }
                             gameActionRequests={profileData.id === authUser?.id ? gameActionRequests : []}
                             areRequestsLoading={profileData.id === authUser?.id && areRequestsLoading}
                             showGameLocations={isLoggedIn}
@@ -540,6 +559,48 @@ function App() {
                 />
             )}
 
+            <GameDetailsDialog
+                game={detailsGame}
+                open={detailsGame !== null || isDetailsLoading || !!detailsError}
+                isLoading={isDetailsLoading}
+                error={detailsError}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDetailsGame(null);
+                        setDetailsError('');
+                    }
+                }}
+            />
+
+            <AlertDialog open={isRsvpConfirmOpen} onOpenChange={setIsRsvpConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Join this game?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {rsvpGame
+                                ? `Join ${rsvpGame.title} on ${rsvpGame.date} at ${rsvpGame.time}?`
+                                : 'Confirm that you want to join this game.'}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    {rsvpError && (
+                        <p role="alert" className="text-sm text-destructive">
+                            {rsvpError}
+                        </p>
+                    )}
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isJoiningGame}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault(); // keep dialog open until join finishes
+                                void confirmJoinGame();
+                            }}
+                            disabled={isJoiningGame}>
+                            {isJoiningGame ? 'Joining...' : 'Join Game'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             {/* Mobile Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t-2 border-border/30 bg-card/95 backdrop-blur-sm">
                 <div className="grid grid-cols-4 gap-1 p-2">
@@ -559,7 +620,7 @@ function App() {
                     </Button>
                     <Button
                         variant={currentView === 'browse' ? 'default' : 'ghost'}
-                        onClick={() => setCurrentView('browse')}
+                        onClick={handleFindPlayers}
                         className={`flex-col h-auto py-2 ${currentView === 'browse' ? 'bg-primary text-primary-foreground' : ''}`}>
                         <Users className="w-5 h-5 mb-1" />
                         <span className="text-xs">Players</span>

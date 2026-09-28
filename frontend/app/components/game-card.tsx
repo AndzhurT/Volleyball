@@ -6,6 +6,7 @@ import { Card } from './ui/card';
 export interface Game {
     id: string;
     title: string;
+    description?: string;
     date: string;
     time: string;
     location: string;
@@ -13,6 +14,9 @@ export interface Game {
     skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
     spotsLeft: number;
     totalSpots: number;
+    durationMinutes?: number;
+    lifecycleStatus?: 'upcoming' | 'ongoing' | 'ended';
+    coordinates?: { type: 'Point'; coordinates: [number, number] };
     type: 'casual' | 'competitive';
     courtType: 'indoor' | 'outdoor' | 'beach';
     playersJoined: Array<{ id: string; name: string; avatar: string }>;
@@ -53,6 +57,19 @@ export function GameCard({ game, onRSVP, onViewDetails, isJoined = false, showLo
                     <div className="flex-1">
                         <h3 className="text-lg mb-2">{game.title}</h3>
                         <div className="flex flex-wrap gap-2 mb-3">
+                            {game.lifecycleStatus && (
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        game.lifecycleStatus === 'ongoing'
+                                            ? 'border-success/30 bg-success/10 text-success'
+                                            : game.lifecycleStatus === 'ended'
+                                              ? 'border-muted-foreground/30 bg-muted text-muted-foreground'
+                                              : 'border-info/30 bg-info/10 text-info'
+                                    }>
+                                    {game.lifecycleStatus}
+                                </Badge>
+                            )}
                             <Badge variant="outline" className={getSkillLevelColor(game.skillLevel)}>
                                 {game.skillLevel}
                             </Badge>
@@ -74,7 +91,10 @@ export function GameCard({ game, onRSVP, onViewDetails, isJoined = false, showLo
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="w-4 h-4" />
-                        <span>{game.time}</span>
+                        <span>
+                            {game.time}
+                            {game.durationMinutes ? ` · about ${game.durationMinutes} min` : ''}
+                        </span>
                     </div>
                     {showLocation && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -127,8 +147,8 @@ export function GameCard({ game, onRSVP, onViewDetails, isJoined = false, showLo
                         <Button
                             onClick={() => onRSVP?.(game.id)}
                             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                            disabled={game.spotsLeft === 0}>
-                            {game.spotsLeft === 0 ? 'Full' : 'Join Game'}
+                            disabled={game.spotsLeft === 0 || game.lifecycleStatus === 'ended'}>
+                            {game.lifecycleStatus === 'ended' ? 'Ended' : game.spotsLeft === 0 ? 'Full' : 'Join Game'}
                         </Button>
                     )}
                     <Button

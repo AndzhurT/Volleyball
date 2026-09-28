@@ -17,6 +17,7 @@ export interface GameActionRequest {
         description?: string;
         skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
         totalSpots: number;
+        durationMinutes: number;
         type: 'casual' | 'competitive';
         courtType: 'indoor' | 'outdoor' | 'beach';
     };
@@ -34,8 +35,30 @@ export interface GameActionRequestInput {
     description: string;
     skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
     totalSpots: number;
+    durationMinutes: number;
     type: 'casual' | 'competitive';
     courtType: 'indoor' | 'outdoor' | 'beach';
+}
+
+export interface GameRecord {
+    id: string;
+    title: string;
+    date: string;
+    time: string;
+    location?: string;
+    description?: string;
+    skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
+    spotsLeft: number;
+    totalSpots: number;
+    durationMinutes: number;
+    lifecycleStatus: 'upcoming' | 'ongoing' | 'ended';
+    type: 'casual' | 'competitive';
+    courtType: 'indoor' | 'outdoor' | 'beach';
+    coordinates?: { type: 'Point'; coordinates: [number, number] };
+    createdBy: string;
+    playersJoined: Array<{ id: string; name: string; avatar: string }>;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface UserProfile {
@@ -219,6 +242,22 @@ export function deleteMyGameActionRequest(token: string, requestId: string) {
         },
         token,
     );
+}
+
+export function getGames(token?: string) {
+    return request<{ data: GameRecord[] }>('/api/games?limit=50', { method: 'GET' }, token);
+}
+
+export function getMyGames(token: string) {
+    return request<{ data: GameRecord[] }>('/api/games/mine', { method: 'GET' }, token);
+}
+
+export function joinGame(token: string, gameId: string) {
+    return request<GameRecord>(`/api/games/${encodeURIComponent(gameId)}/join`, { method: 'POST' }, token);
+}
+
+export function getGame(token: string | undefined, gameId: string) {
+    return request<GameRecord>(`/api/games/${encodeURIComponent(gameId)}`, { method: 'GET' }, token);
 }
 
 export function getProfiles() {

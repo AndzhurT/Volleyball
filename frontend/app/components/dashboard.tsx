@@ -10,6 +10,9 @@ interface DashboardProps {
     username?: string;
     onLogin: () => void;
     onFindGames: () => void;
+    onFindPlayers: () => void;
+    joinedGameIds?: string[];
+    isGameLoading?: boolean;
     upcomingGames: Game[];
     nearbyGames: Game[];
     suggestedPlayers: Player[];
@@ -24,6 +27,9 @@ export function Dashboard({
     username,
     onLogin,
     onFindGames,
+    onFindPlayers,
+    joinedGameIds = [],
+    isGameLoading = false,
     upcomingGames,
     nearbyGames,
     suggestedPlayers,
@@ -121,10 +127,16 @@ export function Dashboard({
                             game={game}
                             onRSVP={onRSVP}
                             onViewDetails={onViewGameDetails}
+                            isJoined={joinedGameIds.includes(game.id)}
                             showLocation={isLoggedIn}
                         />
                     ))}
                 </div>
+                {!nearbyGames.length && (
+                    <p className="mt-4 text-sm text-muted-foreground">
+                        {isGameLoading ? 'Loading games...' : 'No games are currently listed.'}
+                    </p>
+                )}
             </section>
 
             {/* Suggested Players */}
@@ -134,7 +146,7 @@ export function Dashboard({
                         <h2 className="text-2xl mb-1">Players You May Know</h2>
                         <p className="text-muted-foreground">Connect with players in your area</p>
                     </div>
-                    <Button variant="outline" className="border-border hover:border-primary/50">
+                    <Button variant="outline" className="border-border hover:border-primary/50" onClick={onFindPlayers}>
                         See More
                     </Button>
                 </div>

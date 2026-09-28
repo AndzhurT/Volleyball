@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, Filter, Search, Navigation } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -9,13 +9,16 @@ import { Badge } from './ui/badge';
 import { Card } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
+const GAMES_PER_BATCH = 10;
+
 interface GameWithCoords extends Game {
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
 }
 
 interface MapViewProps {
     games: GameWithCoords[];
+    joinedGameIds?: string[];
     onRSVP: (gameId: string) => void;
     onViewGameDetails: (gameId: string) => void;
 }
@@ -42,11 +45,14 @@ function FlyToGame({ selectedGame }: { selectedGame: GameWithCoords | null }) {
     return null;
 }
 
-export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
+export function MapView({ games, joinedGameIds = [], onRSVP, onViewGameDetails }: MapViewProps) {
     const [selectedGame, setSelectedGame] = useState<GameWithCoords | null>(null);
     const [skillFilter, setSkillFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [visibleGameCount, setVisibleGameCount] = useState(GAMES_PER_BATCH);
+    const gameListRef = useRef<HTMLDivElement>(null);
+    const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
 
     const filteredGames = useMemo(() => {
         return games.filter((game) => {
@@ -62,8 +68,33 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
     }, [games, skillFilter, typeFilter, searchQuery]);
 
     const validGames = filteredGames.filter(
-        (game) => typeof game.latitude === 'number' && typeof game.longitude === 'number',
+        (game): game is GameWithCoords & { latitude: number; longitude: number } =>
+            typeof game.latitude === 'number' && typeof game.longitude === 'number',
     );
+    const visibleGames = filteredGames.slice(0, visibleGameCount);
+    const visibleMapGames = validGames.slice(0, visibleGameCount);
+
+    useEffect(() => {
+        setVisibleGameCount(GAMES_PER_BATCH);
+    }, [skillFilter, typeFilter, searchQuery]);
+
+    useEffect(() => {
+        const sentinel = loadMoreSentinelRef.current;
+        const scrollRoot = gameListRef.current;
+        if (selectedGame || !sentinel || !scrollRoot || visibleGameCount >= filteredGames.length) return;
+        if (typeof IntersectionObserver === 'undefined') return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setVisibleGameCount((current) => Math.min(current + GAMES_PER_BATCH, filteredGames.length));
+                }
+            },
+            { root: scrollRoot, rootMargin: '160px' },
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [filteredGames.length, selectedGame, visibleGameCount]);
 
     const defaultCenter: [number, number] =
         validGames.length > 0 ? [validGames[0].latitude, validGames[0].longitude] : [39.9526, -75.1652];
@@ -134,7 +165,7 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
 
                             <FlyToGame selectedGame={selectedGame} />
 
-                            {validGames.map((game) => (
+                            {visibleMapGames.map((game) => (
                                 <Marker
                                     key={game.id}
                                     position={[game.latitude, game.longitude]}
@@ -154,8 +185,15 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
                                                 <Button size="sm" onClick={() => onViewGameDetails(game.id)}>
                                                     View
                                                 </Button>
-                                                <Button size="sm" variant="outline" onClick={() => onRSVP(game.id)}>
-                                                    RSVP
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={
+                                                        joinedGameIds.includes(game.id) ||
+                                                        game.lifecycleStatus === 'ended'
+                                                    }
+                                                    onClick={() => onRSVP(game.id)}>
+                                                    {joinedGameIds.includes(game.id) ? 'Joined' : 'RSVP'}
                                                 </Button>
                                             </div>
                                         </div>
@@ -172,7 +210,7 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
 
                         <div className="absolute bottom-4 left-4 z-[1000]">
                             <Badge className="bg-card text-foreground border-2 border-border shadow-lg px-4 py-2">
-                                {filteredGames.length} games found
+                                Showing {visibleGames.length} of {filteredGames.length} games
                             </Badge>
                         </div>
                     </Card>
@@ -188,13 +226,18 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
                                 </Button>
                             </div>
 
-                            <GameCard game={selectedGame} onRSVP={onRSVP} onViewDetails={onViewGameDetails} />
+                            <GameCard
+                                game={selectedGame}
+                                onRSVP={onRSVP}
+                                onViewDetails={onViewGameDetails}
+                                isJoined={joinedGameIds.includes(selectedGame.id)}
+                            />
                         </div>
                     ) : (
                         <div>
-                            <h3 className="text-xl mb-4">Nearby Games</h3>
-                            <div className="space-y-3 max-h-[560px] overflow-y-auto pr-2">
-                                {filteredGames.slice(0, 8).map((game) => (
+                            <h3 className="text-xl mb-4">Found {filteredGames.length} Games</h3>
+                            <div ref={gameListRef} className="space-y-3 max-h-[560px] overflow-y-auto pr-2">
+                                {visibleGames.map((game) => (
                                     <Card
                                         key={game.id}
                                         onClick={() => setSelectedGame(game)}
@@ -220,6 +263,25 @@ export function MapView({ games, onRSVP, onViewGameDetails }: MapViewProps) {
                                         </div>
                                     </Card>
                                 ))}
+                                {visibleGameCount < filteredGames.length && (
+                                    <div
+                                        ref={loadMoreSentinelRef}
+                                        className="py-4 text-center text-sm text-muted-foreground">
+                                        {typeof IntersectionObserver === 'undefined' ? (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setVisibleGameCount((current) =>
+                                                        Math.min(current + GAMES_PER_BATCH, filteredGames.length),
+                                                    )
+                                                }>
+                                                Load 10 more
+                                            </Button>
+                                        ) : (
+                                            'Scroll to load more games'
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

@@ -109,3 +109,21 @@ test('game validation rejects invalid schedule, capacity, and coordinates', () =
         /coordinates/i,
     );
 });
+
+test('game validation rejects duration outside supported limits', () => {
+    assert.throws(
+        () =>
+            validateGameInput({
+                title: 'Test game',
+                date: '2026-10-10',
+                time: '18:00',
+                location: '123 Volleyball Street',
+                skillLevel: 'All Levels',
+                totalSpots: 12,
+                durationMinutes: 15,
+                type: 'casual',
+                courtType: 'indoor',
+            }),
+        /duration/i,
+    );
+});
