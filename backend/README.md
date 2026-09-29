@@ -60,38 +60,38 @@ docker compose up --build
 
 ## API overview
 
-| Method | Endpoint                           | Authentication | Description                                           |
-| ------ | ---------------------------------- | -------------- | ----------------------------------------------------- |
-| GET    | `/`                                | None           | API welcome message                                   |
-| POST   | `/api/auth/register`               | None           | Create a user                                         |
-| POST   | `/api/auth/login`                  | None           | Authenticate and receive a JWT                        |
-| POST   | `/api/auth/refresh`                | User JWT       | Issue a refreshed session JWT                         |
-| GET    | `/api/auth/me`                     | User JWT       | Return the currently authenticated user               |
-| POST   | `/api/auth/logout`                 | User JWT       | Acknowledge client logout                             |
-| GET    | `/api/auth/oauth/google`           | None           | Start Google OAuth login                              |
-| GET    | `/api/auth/oauth/facebook`         | None           | Start Facebook OAuth login                            |
-| POST   | `/api/auth/oauth/exchange`         | None           | Exchange a one-time OAuth callback code               |
-| POST   | `/api/auth/invite-admin`           | Admin JWT      | Generate a one-time invite token for a new admin      |
-| GET    | `/api/profiles`                    | None           | List public player profiles                           |
-| GET    | `/api/profiles/:userId`            | None           | Read a public player profile                          |
-| GET    | `/api/profiles/me`                 | User JWT       | Read the current user's profile                       |
-| PUT    | `/api/profiles/me`                 | User JWT       | Edit the current user's profile                       |
-| GET    | `/api/games`                       | Optional JWT   | List games; hides addresses without a JWT             |
-| GET    | `/api/games/mine`                  | User JWT       | List games the current user has joined                |
-| GET    | `/api/games/:id`                   | Optional JWT   | Get a game; hides address and coordinates without JWT |
-| POST   | `/api/games`                       | Admin JWT      | Create a game directly                                |
-| PUT    | `/api/games/:id`                   | Admin JWT      | Update a game directly                                |
-| POST   | `/api/games/:id/join`              | User JWT       | Join a game with available capacity                   |
-| DELETE | `/api/games/:id/participants/me`   | User JWT       | Leave a game                                          |
-| DELETE | `/api/games/:id`                   | Creator/Admin  | Delete a game                                         |
-| POST   | `/api/action-requests`             | User JWT       | Request game creation or update                       |
-| PUT    | `/api/action-requests/:id`         | Owner JWT      | Update a pending request                              |
-| DELETE | `/api/action-requests/:id`         | Owner JWT      | Delete a pending request                              |
-| GET    | `/api/action-requests/mine`        | User JWT       | List the current user's requests                      |
-| GET    | `/api/action-requests`             | Admin JWT      | List the admin review queue                           |
-| GET    | `/api/action-requests/:id`         | Admin JWT      | Read one request                                      |
-| POST   | `/api/action-requests/:id/approve` | Admin JWT      | Approve and apply a game change                       |
-| POST   | `/api/action-requests/:id/decline` | Admin JWT      | Decline a request with an optional note               |
+| Method | Endpoint                           | Authentication | Description                                                |
+| ------ | ---------------------------------- | -------------- | ---------------------------------------------------------- |
+| GET    | `/`                                | None           | API welcome message                                        |
+| POST   | `/api/auth/register`               | None           | Create a user                                              |
+| POST   | `/api/auth/login`                  | None           | Authenticate and receive a JWT                             |
+| POST   | `/api/auth/refresh`                | User JWT       | Issue a refreshed session JWT                              |
+| GET    | `/api/auth/me`                     | User JWT       | Return the currently authenticated user                    |
+| POST   | `/api/auth/logout`                 | User JWT       | Acknowledge client logout                                  |
+| GET    | `/api/auth/oauth/google`           | None           | Start Google OAuth login                                   |
+| GET    | `/api/auth/oauth/facebook`         | None           | Start Facebook OAuth login                                 |
+| POST   | `/api/auth/oauth/exchange`         | None           | Exchange a one-time OAuth callback code                    |
+| POST   | `/api/auth/invite-admin`           | Admin JWT      | Generate a one-time invite token for a new admin           |
+| GET    | `/api/profiles`                    | None           | List public player profiles                                |
+| GET    | `/api/profiles/:userId`            | None           | Read a public player profile                               |
+| GET    | `/api/profiles/me`                 | User JWT       | Read the current user's profile                            |
+| PUT    | `/api/profiles/me`                 | User JWT       | Edit the current user's profile                            |
+| GET    | `/api/games`                       | Optional JWT   | List upcoming/ongoing games; hides addresses without a JWT |
+| GET    | `/api/games/mine`                  | User JWT       | List games the current user has joined                     |
+| GET    | `/api/games/:id`                   | Optional JWT   | Get a game; hides address and coordinates without JWT      |
+| POST   | `/api/games`                       | Admin JWT      | Create a game directly                                     |
+| PUT    | `/api/games/:id`                   | Admin JWT      | Update a game directly                                     |
+| POST   | `/api/games/:id/join`              | User JWT       | Join a game with available capacity                        |
+| DELETE | `/api/games/:id/participants/me`   | User JWT       | Leave a game                                               |
+| DELETE | `/api/games/:id`                   | Creator/Admin  | Delete a game                                              |
+| POST   | `/api/action-requests`             | User JWT       | Request game creation or update                            |
+| PUT    | `/api/action-requests/:id`         | Owner JWT      | Update a pending request                                   |
+| DELETE | `/api/action-requests/:id`         | Owner JWT      | Delete a pending request                                   |
+| GET    | `/api/action-requests/mine`        | User JWT       | List the current user's requests                           |
+| GET    | `/api/action-requests`             | Admin JWT      | List the admin review queue                                |
+| GET    | `/api/action-requests/:id`         | Admin JWT      | Read one request                                           |
+| POST   | `/api/action-requests/:id/approve` | Admin JWT      | Approve and apply a game change                            |
+| POST   | `/api/action-requests/:id/decline` | Admin JWT      | Decline a request with an optional note                    |
 
 Protected requests use this header:
 

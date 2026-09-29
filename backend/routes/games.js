@@ -48,7 +48,9 @@ router.get('/', optionalProtect, async (req, res, next) => {
     try {
         const page = Math.max(1, Number(req.query.page) || 1);
         const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
-        const filter = {};
+        const filter = {
+            endsAt: { $gt: new Date() },
+        };
 
         if (typeof req.query.skillLevel === 'string') filter.skillLevel = req.query.skillLevel;
         if (typeof req.query.type === 'string') filter.type = req.query.type;
@@ -57,9 +59,9 @@ router.get('/', optionalProtect, async (req, res, next) => {
 
         const [games, total] = await Promise.all([
             Game.find(filter)
+                .sort({ startsAt: 1 })
                 .populate('createdBy', '_id username')
                 .populate('participants', '_id username')
-                .sort({ date: 1, time: 1 })
                 .skip((page - 1) * limit)
                 .limit(limit),
             Game.countDocuments(filter),
@@ -80,9 +82,9 @@ router.get('/', optionalProtect, async (req, res, next) => {
 router.get('/mine', protect, async (req, res, next) => {
     try {
         const games = await Game.find({ participants: req.user.id })
+            .sort({ startsAt: 1 })
             .populate('createdBy', '_id username')
-            .populate('participants', '_id username')
-            .sort({ date: 1, time: 1 });
+            .populate('participants', '_id username');
         res.json({ data: games.map((game) => serializeGame(game, true)) });
     } catch (err) {
         next(err);

@@ -97,21 +97,46 @@ export function ProfileView({
     const allGamesInPanel = openGameList === 'upcoming' ? sortedUpcomingGames : sortedPastGames;
 
     useEffect(() => {
-        const sentinel = gameListSentinelRef.current;
-        const scrollRoot = gameListScrollRef.current;
-        if (!openGameList || !sentinel || !scrollRoot || visibleGameCount >= allGamesInPanel.length) return;
+        if (!openGameList) return;
         if (typeof IntersectionObserver === 'undefined') return;
+        if (visibleGameCount >= allGamesInPanel.length) return;
 
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setVisibleGameCount((current) => Math.min(current + 10, allGamesInPanel.length));
-                }
-            },
-            { root: scrollRoot, rootMargin: '160px' },
-        );
-        observer.observe(sentinel);
-        return () => observer.disconnect();
+        let cancelled = false;
+        let observer: IntersectionObserver | null = null;
+
+        const tryObserve = () => {
+            if (cancelled) return;
+
+            const sentinel = gameListSentinelRef.current;
+            const scrollRoot = gameListScrollRef.current;
+
+            if (!sentinel || !scrollRoot) {
+                requestAnimationFrame(tryObserve);
+                return;
+            }
+
+            observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry?.isIntersecting) {
+                        setVisibleGameCount((current) => Math.min(current + 10, allGamesInPanel.length));
+                    }
+                },
+                {
+                    root: scrollRoot,
+                    rootMargin: '0px 0px 160px 0px',
+                    threshold: 0,
+                },
+            );
+
+            observer.observe(sentinel);
+        };
+
+        tryObserve();
+
+        return () => {
+            cancelled = true;
+            observer?.disconnect();
+        };
     }, [openGameList, visibleGameCount, allGamesInPanel.length]);
 
     const showGameList = (list: 'upcoming' | 'past') => {
@@ -269,7 +294,6 @@ export function ProfileView({
                             <div className="mb-4 flex items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-2xl">Your Upcoming Games</h2>
-                                    <p className="text-sm text-muted-foreground">Sorted by the earliest start time</p>
                                 </div>
                                 {sortedUpcomingGames.length > 3 && (
                                     <Button variant="outline" onClick={() => showGameList('upcoming')}>
@@ -316,7 +340,6 @@ export function ProfileView({
                             <div className="mb-4 flex items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-2xl">Past Games</h2>
-                                    <p className="text-sm text-muted-foreground">Sorted by the earliest start time</p>
                                 </div>
                                 {sortedPastGames.length > 3 && (
                                     <Button variant="outline" onClick={() => showGameList('past')}>

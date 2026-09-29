@@ -20,11 +20,31 @@ const gameSchema = new mongoose.Schema(
         type: { type: String, enum: ['casual', 'competitive'], required: true },
         courtType: { type: String, enum: ['indoor', 'outdoor', 'beach'], required: true },
         durationMinutes: { type: Number, min: 30, max: 360, default: 90, required: true },
+        startsAt: { type: Date, required: true, index: true },
+        endsAt: { type: Date, required: true, index: true },
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     },
     { timestamps: true },
 );
+
+function applySchedule(doc) {
+    const startsAt = new Date(`${doc.date}T${doc.time}:00`);
+    if (Number.isNaN(startsAt.getTime())) {
+        throw new Error('Invalid date/time');
+    }
+    doc.startsAt = startsAt;
+    doc.endsAt = new Date(startsAt.getTime() + doc.durationMinutes * 60_000);
+}
+
+gameSchema.pre('validate', function (next) {
+    try {
+        applySchedule(this);
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
 
 gameSchema.virtual('spotsLeft').get(function () {
     const taken = Array.isArray(this.participants) ? this.participants.length : 0;
@@ -32,11 +52,10 @@ gameSchema.virtual('spotsLeft').get(function () {
 });
 
 gameSchema.virtual('lifecycleStatus').get(function () {
-    const startsAt = Date.parse(`${this.date}T${this.time}:00Z`);
-    if (!Number.isFinite(startsAt)) return 'upcoming';
     const now = Date.now();
-    if (now < startsAt) return 'upcoming';
-    return now < startsAt + this.durationMinutes * 60_000 ? 'ongoing' : 'ended';
+    if (now < this.startsAt.getTime()) return 'upcoming';
+    if (now < this.endsAt.getTime()) return 'ongoing';
+    return 'ended';
 });
 
 gameSchema.index({ date: 1, time: 1 });
