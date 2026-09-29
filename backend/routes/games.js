@@ -21,6 +21,8 @@ function serializeGame(game, includeLocation) {
         type: value.type,
         courtType: value.courtType,
         durationMinutes: value.durationMinutes,
+        startsAt: value.startsAt,
+        endsAt: value.endsAt,
         lifecycleStatus: game.lifecycleStatus || value.lifecycleStatus,
         createdBy: value.createdBy?._id ? String(value.createdBy._id) : String(value.createdBy),
         playersJoined: participants.map((participant) => ({

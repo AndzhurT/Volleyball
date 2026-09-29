@@ -13,6 +13,8 @@ interface DashboardProps {
     onFindPlayers: () => void;
     joinedGameIds?: string[];
     isGameLoading?: boolean;
+    gamesPlayedThisMonth?: number;
+    hoursPlayedThisMonth?: number;
     upcomingGames: Game[];
     nearbyGames: Game[];
     suggestedPlayers: Player[];
@@ -30,6 +32,8 @@ export function Dashboard({
     onFindPlayers,
     joinedGameIds = [],
     isGameLoading = false,
+    gamesPlayedThisMonth = 0,
+    hoursPlayedThisMonth = 0,
     upcomingGames,
     nearbyGames,
     suggestedPlayers,
@@ -39,8 +43,18 @@ export function Dashboard({
     onViewProfile,
 }: DashboardProps) {
     const stats = [
-        { label: 'Games This Month', value: '12', icon: Calendar, color: 'text-primary-foreground' },
-        { label: 'Hours Played', value: '24', icon: Activity, color: 'text-primary-foreground' },
+        {
+            label: 'Games Played This Month',
+            value: String(gamesPlayedThisMonth),
+            icon: Calendar,
+            color: 'text-primary-foreground',
+        },
+        {
+            label: 'Hours Played This Month',
+            value: Number(hoursPlayedThisMonth.toFixed(1)).toString(),
+            icon: Activity,
+            color: 'text-primary-foreground',
+        },
         { label: 'New Friends', value: '8', icon: Users, color: 'text-primary-foreground' },
     ];
 

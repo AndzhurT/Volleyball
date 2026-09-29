@@ -51,6 +51,8 @@ export interface GameRecord {
     spotsLeft: number;
     totalSpots: number;
     durationMinutes: number;
+    startsAt: string;
+    endsAt: string;
     lifecycleStatus: 'upcoming' | 'ongoing' | 'ended';
     type: 'casual' | 'competitive';
     courtType: 'indoor' | 'outdoor' | 'beach';

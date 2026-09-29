@@ -51,13 +51,22 @@ type GameWithCoords = Game & {
     longitude?: number;
 };
 
-function toUiGame(record: GameRecord): GameWithCoords {
+type MyGameWithCoords = GameWithCoords & {
+    durationMinutes: number;
+    startsAt: string;
+    endsAt: string;
+};
+
+function toUiGame(record: GameRecord): MyGameWithCoords {
     const coordinates = record.coordinates?.coordinates;
     return {
         ...record,
         location: record.location || '',
         latitude: coordinates?.[1],
         longitude: coordinates?.[0],
+        durationMinutes: record.durationMinutes || 90,
+        startsAt: record.startsAt,
+        endsAt: record.endsAt,
     };
 }
 
@@ -99,7 +108,7 @@ function App() {
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [profiles, setProfiles] = useState<Player[]>([]);
     const [games, setGames] = useState<GameWithCoords[]>([]);
-    const [myGames, setMyGames] = useState<GameWithCoords[]>([]);
+    const [myGames, setMyGames] = useState<MyGameWithCoords[]>([]);
     const [isGameLoading, setIsGameLoading] = useState(false);
     const [rsvpGame, setRsvpGame] = useState<GameWithCoords | null>(null);
     const [isRsvpConfirmOpen, setIsRsvpConfirmOpen] = useState(false);
@@ -350,6 +359,16 @@ function App() {
 
     const gamesSortedByStart = [...games].sort(compareGameStart);
     const myGamesSortedByStart = [...myGames].sort(compareGameStart);
+    const now = Date.now();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const oneMonthAgoTime = oneMonthAgo.getTime();
+    const recentlyEndedGames = myGames.filter((game) => {
+        const endedAt = new Date(game.endsAt).getTime();
+        return endedAt >= oneMonthAgoTime && endedAt <= now;
+    });
+    const gamesPlayedThisMonth = recentlyEndedGames.length;
+    const hoursPlayedThisMonth = recentlyEndedGames.reduce((total, game) => total + game.durationMinutes / 60, 0);
 
     return (
         <div className="min-h-screen bg-background">
@@ -450,6 +469,8 @@ function App() {
                         nearbyGames={gamesSortedByStart}
                         joinedGameIds={myGames.map((game) => game.id)}
                         isGameLoading={isGameLoading}
+                        gamesPlayedThisMonth={gamesPlayedThisMonth}
+                        hoursPlayedThisMonth={hoursPlayedThisMonth}
                         suggestedPlayers={profiles.slice(0, 4)}
                         onRSVP={handleRSVP}
                         onViewGameDetails={handleViewGameDetails}
@@ -479,6 +500,8 @@ function App() {
                             nearbyGames={gamesSortedByStart}
                             joinedGameIds={[]}
                             isGameLoading={isGameLoading}
+                            gamesPlayedThisMonth={0}
+                            hoursPlayedThisMonth={0}
                             suggestedPlayers={[]}
                             onRSVP={handleRSVP}
                             onViewGameDetails={handleViewGameDetails}
