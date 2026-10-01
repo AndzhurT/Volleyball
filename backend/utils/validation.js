@@ -104,6 +104,20 @@ function validateProfileInput(data = {}) {
     return { displayName, avatar, bio, location, skillLevel, positions };
 }
 
+function validatePlayerReviewInput(data = {}) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw validationError('Review payload must be a valid object.');
+    }
+    if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 5) {
+        throw validationError('Rating must be a whole number from 1 to 5.');
+    }
+    const comment = data.comment === undefined ? '' : data.comment;
+    if (typeof comment !== 'string' || comment.length > 1000) {
+        throw validationError('Review comment must be a string no longer than 1000 characters.');
+    }
+    return { rating: data.rating, comment: comment.trim() };
+}
+
 function validateEmailRequestInput(data = {}) {
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
         throw validationError('Email payload must be a valid object.');
@@ -212,6 +226,7 @@ module.exports = {
     validateRegistrationInput,
     validateLoginInput,
     validateProfileInput,
+    validatePlayerReviewInput,
     validateEmailRequestInput,
     validateVerificationTokenInput,
     validatePasswordResetInput,

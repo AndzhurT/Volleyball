@@ -74,8 +74,14 @@ docker compose up --build
 | POST   | `/api/auth/invite-admin`           | Admin JWT      | Generate a one-time invite token for a new admin           |
 | GET    | `/api/profiles`                    | None           | List public player profiles                                |
 | GET    | `/api/profiles/:userId`            | None           | Read a public player profile                               |
+| GET    | `/api/profiles/:userId/followers`  | None           | List a profile's followers                                 |
+| GET    | `/api/profiles/:userId/following`  | None           | List profiles a user follows                               |
 | GET    | `/api/profiles/me`                 | User JWT       | Read the current user's profile                            |
 | PUT    | `/api/profiles/me`                 | User JWT       | Edit the current user's profile                            |
+| PUT    | `/api/profiles/:userId/follow`     | User JWT       | Follow a profile                                           |
+| DELETE | `/api/profiles/:userId/follow`     | User JWT       | Unfollow a profile                                         |
+| PUT    | `/api/profiles/:userId/reviews`    | User JWT       | Create or update a 1-5 star player review                  |
+| DELETE | `/api/profiles/:userId/reviews/me` | User JWT       | Delete the current user's review                           |
 | GET    | `/api/games`                       | Optional JWT   | List upcoming/ongoing games; hides addresses without a JWT |
 | GET    | `/api/games/mine`                  | User JWT       | List games the current user has joined                     |
 | GET    | `/api/games/:id`                   | Optional JWT   | Get a game; hides address and coordinates without JWT      |

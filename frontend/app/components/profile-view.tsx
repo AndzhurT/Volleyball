@@ -1,4 +1,4 @@
-import { MapPin, Trophy, Calendar, Settings, ThumbsUp, Star, Pencil, Trash2 } from 'lucide-react';
+import { MapPin, Calendar, Settings, ThumbsUp, Star, Pencil, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
@@ -27,12 +27,12 @@ interface ProfileViewProps {
         gamesAttended: Game[];
         followers: Player[];
         following: Player[];
-        achievements: Array<{ title: string; icon: string; date: string }>;
 
         reviews?: {
             id: string;
             reviewerName: string;
             reviewerAvatar?: string;
+            isOwnReview?: boolean;
             rating: number;
             comment: string;
             date: string;
@@ -56,6 +56,9 @@ interface ProfileViewProps {
     onDeleteGameRequest?: (requestId: string) => Promise<void>;
     onEditProfile?: () => void;
     onConnect?: (playerId: string) => void;
+    onViewProfile: (playerId: string) => void;
+    onSubmitReview?: (rating: number, comment: string) => Promise<void>;
+    onDeleteReview?: () => Promise<void>;
     onRSVP?: (gameId: string) => void;
     onViewGameDetails?: (gameId: string) => void;
 }
@@ -73,11 +76,19 @@ export function ProfileView({
     onDeleteGameRequest,
     onEditProfile,
     onConnect,
+    onViewProfile,
+    onSubmitReview,
+    onDeleteReview,
     onRSVP,
     onViewGameDetails,
 }: ProfileViewProps) {
     const [newReview, setNewReview] = useState('');
-    const [newRating, setNewRating] = useState(5);
+    const [newRating, setNewRating] = useState(0);
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    const [reviewError, setReviewError] = useState('');
+    const [isEditingReview, setIsEditingReview] = useState(false);
+    const [isReviewDeleteOpen, setIsReviewDeleteOpen] = useState(false);
+    const [isDeletingReview, setIsDeletingReview] = useState(false);
     const [requestToDelete, setRequestToDelete] = useState<GameActionRequest | null>(null);
     const [requestActionError, setRequestActionError] = useState('');
     const [openGameList, setOpenGameList] = useState<'upcoming' | 'past' | null>(null);
@@ -95,6 +106,15 @@ export function ProfileView({
         `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`),
     );
     const allGamesInPanel = openGameList === 'upcoming' ? sortedUpcomingGames : sortedPastGames;
+    const ownReview = player.reviews?.find((review) => review.isOwnReview);
+
+    useEffect(() => {
+        setNewReview('');
+        setNewRating(0);
+        setIsEditingReview(false);
+        setReviewError('');
+        setIsReviewDeleteOpen(false);
+    }, [player.id]);
 
     useEffect(() => {
         if (!openGameList) return;
@@ -139,15 +159,65 @@ export function ProfileView({
         };
     }, [openGameList, visibleGameCount, allGamesInPanel.length]);
 
+    const formatReviewDate = (isoDate: string): string => {
+        const date = new Date(isoDate);
+        if (Number.isNaN(date.getTime())) return '';
+
+        const diffMs = Date.now() - date.getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffHours < 24) {
+            if (diffHours < 1) return 'Just now';
+            return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+        }
+
+        if (diffDays <= 7) {
+            return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+        }
+
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const yyyy = date.getFullYear();
+        return `${mm}/${dd}/${yyyy}`;
+    };
+
     const showGameList = (list: 'upcoming' | 'past') => {
         setVisibleGameCount(10);
         setOpenGameList(list);
     };
 
-    const handleSubmitReview = () => {
-        console.log('Submitting review:', { rating: newRating, comment: newReview });
-        setNewReview('');
-        setNewRating(5);
+    const handleSubmitReview = async () => {
+        if (newRating < 1 || newRating > 5 || !onSubmitReview) return;
+        setIsSubmittingReview(true);
+        setReviewError('');
+        try {
+            await onSubmitReview(newRating, newReview.trim());
+            setNewReview('');
+            setNewRating(0);
+            setIsEditingReview(false);
+        } catch (error) {
+            setReviewError(error instanceof Error ? error.message : 'Unable to submit your review.');
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
+
+    const handleDeleteReview = async () => {
+        if (!onDeleteReview) return;
+        setIsDeletingReview(true);
+        setReviewError('');
+        try {
+            await onDeleteReview();
+            setIsReviewDeleteOpen(false);
+            setIsEditingReview(false);
+            setNewReview('');
+            setNewRating(0);
+        } catch (error) {
+            setReviewError(error instanceof Error ? error.message : 'Unable to delete your review.');
+        } finally {
+            setIsDeletingReview(false);
+        }
     };
 
     return (
@@ -186,16 +256,11 @@ export function ProfileView({
                                     </Button>
                                 </>
                             ) : (
-                                <>
-                                    <Button
-                                        onClick={() => onConnect?.(player.id)}
-                                        className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                                        {player.isFollowing ? 'Following' : 'Follow'}
-                                    </Button>
-                                    <Button variant="outline" className="border-border">
-                                        Message
-                                    </Button>
-                                </>
+                                <Button
+                                    onClick={() => onConnect?.(player.id)}
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                                    {player.isFollowing ? 'Following' : 'Follow'}
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -244,16 +309,11 @@ export function ProfileView({
                                     </Button>
                                 </>
                             ) : (
-                                <>
-                                    <Button
-                                        onClick={() => onConnect?.(player.id)}
-                                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-                                        {player.isFollowing ? 'Following' : 'Follow'}
-                                    </Button>
-                                    <Button variant="outline" className="flex-1 border-border">
-                                        Message
-                                    </Button>
-                                </>
+                                <Button
+                                    onClick={() => onConnect?.(player.id)}
+                                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
+                                    {player.isFollowing ? 'Following' : 'Follow'}
+                                </Button>
                             )}
                         </div>
 
@@ -278,11 +338,10 @@ export function ProfileView({
 
             {/* Tabs Section */}
             <Tabs defaultValue="games" className="w-full">
-                <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-6' : 'grid-cols-5'} bg-muted/50`}>
+                <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-5' : 'grid-cols-4'} bg-muted/50`}>
                     <TabsTrigger value="games">Games</TabsTrigger>
                     {isOwnProfile && <TabsTrigger value="requests">Requests</TabsTrigger>}
                     <TabsTrigger value="reviews">Reviews</TabsTrigger>
-                    <TabsTrigger value="achievements">Achievements</TabsTrigger>
                     <TabsTrigger value="followers">Followers</TabsTrigger>
                     <TabsTrigger value="following">Following</TabsTrigger>
                 </TabsList>
@@ -537,19 +596,23 @@ export function ProfileView({
                             </div>
                         </div>
 
-                        {!isOwnProfile && (
+                        {!isOwnProfile && onSubmitReview && (!ownReview || isEditingReview) && (
                             <Card className="p-6 mb-6">
-                                <h3 className="mb-4">Leave a Review</h3>
+                                <h3>{ownReview ? 'Edit Your Review' : 'Leave a Review'}</h3>
 
                                 {/* Rating */}
-                                <div className="flex gap-2 mb-4">
+                                <div className="flex gap-2">
                                     {[1, 2, 3, 4, 5].map((star) => (
-                                        <button key={star} onClick={() => setNewRating(star)}>
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            aria-label={`${star} ${star === 1 ? 'star' : 'stars'}`}
+                                            aria-pressed={newRating === star}
+                                            onClick={() => setNewRating(star)}>
                                             <Star
+                                                fill={star <= newRating ? 'currentColor' : 'none'}
                                                 className={`w-6 h-6 ${
-                                                    star <= newRating
-                                                        ? 'fill-warning text-warning'
-                                                        : 'text-muted-foreground'
+                                                    star <= newRating ? 'text-warning' : 'text-muted-foreground'
                                                 }`}
                                             />
                                         </button>
@@ -560,12 +623,34 @@ export function ProfileView({
                                 <Textarea
                                     value={newReview}
                                     onChange={(e) => setNewReview(e.target.value)}
-                                    placeholder="Write a review..."
+                                    placeholder="Write a comment (optional)..."
                                 />
 
-                                <Button onClick={handleSubmitReview} disabled={!newReview.trim()} className="mt-3">
-                                    Submit Review
+                                {reviewError && (
+                                    <p role="alert" className="text-sm text-destructive">
+                                        {reviewError}
+                                    </p>
+                                )}
+                                <Button
+                                    onClick={() => void handleSubmitReview()}
+                                    disabled={newRating === 0 || isSubmittingReview}
+                                    className="mt-3">
+                                    {isSubmittingReview ? 'Saving...' : ownReview ? 'Save Review' : 'Submit Review'}
                                 </Button>
+                                {ownReview && (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setIsEditingReview(false);
+                                            setNewRating(0);
+                                            setNewReview('');
+                                            setReviewError('');
+                                        }}
+                                        disabled={isSubmittingReview}
+                                        className="ml-2 mt-3">
+                                        Cancel
+                                    </Button>
+                                )}
                             </Card>
                         )}
 
@@ -573,31 +658,58 @@ export function ProfileView({
                         <div className="space-y-4">
                             {player.reviews?.length ? (
                                 player.reviews.map((review) => (
-                                    <Card key={review.id} className="p-4">
+                                    <Card key={review.id} className="p-4 gap-3">
                                         <div className="flex justify-between">
                                             <h4>{review.reviewerName}</h4>
-                                            <span className="text-sm text-muted-foreground">{review.date}</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {formatReviewDate(review.date)}
+                                            </span>
                                         </div>
 
-                                        <div className="flex gap-1 my-1">
+                                        <div className="flex items-center gap-1">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <Star
                                                     key={star}
+                                                    fill={star <= review.rating ? 'currentColor' : 'none'}
                                                     className={`w-4 h-4 ${
-                                                        star <= review.rating
-                                                            ? 'fill-warning text-warning'
-                                                            : 'text-muted-foreground'
+                                                        star <= review.rating ? 'text-warning' : 'text-muted-foreground'
                                                     }`}
                                                 />
                                             ))}
                                         </div>
 
-                                        <p className="text-muted-foreground">{review.comment}</p>
+                                        {review.comment?.trim() ? (
+                                            <p className="text-muted-foreground">{review.comment}</p>
+                                        ) : null}
 
-                                        <Button variant="ghost" size="sm" className="mt-2">
+                                        <Button variant="ghost" size="sm" className="mt-2 self-start">
                                             <ThumbsUp className="w-4 h-4 mr-1" />
                                             {review.helpfulCount}
                                         </Button>
+
+                                        {review.isOwnReview && !isOwnProfile && (
+                                            <div className="mt-2 flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setNewRating(review.rating);
+                                                        setNewReview(review.comment);
+                                                        setIsEditingReview(true);
+                                                        setReviewError('');
+                                                    }}>
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => setIsReviewDeleteOpen(true)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        )}
                                     </Card>
                                 ))
                             ) : (
@@ -607,29 +719,31 @@ export function ProfileView({
                     </div>
                 </TabsContent>
 
-                {/* Achievements Tab */}
-                <TabsContent value="achievements" className="space-y-6 mt-6">
-                    <div>
-                        <h2 className="text-2xl mb-4">Achievements</h2>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {player.achievements.map((achievement, index) => (
-                                <Card
-                                    key={index}
-                                    className="p-6 border border-border hover:border-primary/50 transition-all bg-card cursor-pointer">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-3 rounded-lg bg-warning/10">
-                                            <Trophy className="w-6 h-6 text-warning" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="mb-1">{achievement.title}</h4>
-                                            <p className="text-sm text-muted-foreground">{achievement.date}</p>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
-                </TabsContent>
+                <AlertDialog open={isReviewDeleteOpen} onOpenChange={setIsReviewDeleteOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete your review?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Your rating and comment will be removed from this player’s profile.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        {reviewError && (
+                            <p role="alert" className="text-sm text-destructive">
+                                {reviewError}
+                            </p>
+                        )}
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isDeletingReview}>Cancel</AlertDialogCancel>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                disabled={isDeletingReview}
+                                onClick={() => void handleDeleteReview()}>
+                                {isDeletingReview ? 'Deleting...' : 'Delete Review'}
+                            </Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
 
                 {/* Followers Tab */}
                 <TabsContent value="followers" className="space-y-6 mt-6">
@@ -637,7 +751,13 @@ export function ProfileView({
                         <h2 className="text-2xl mb-4">Followers ({player.followers.length})</h2>
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                             {player.followers.map((follower) => (
-                                <PlayerCard key={follower.id} player={follower} onConnect={onConnect} compact />
+                                <PlayerCard
+                                    key={follower.id}
+                                    player={follower}
+                                    onViewProfile={onViewProfile}
+                                    onConnect={onConnect}
+                                    compact
+                                />
                             ))}
                         </div>
                     </div>
@@ -649,7 +769,13 @@ export function ProfileView({
                         <h2 className="text-2xl mb-4">Following ({player.following.length})</h2>
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                             {player.following.map((following) => (
-                                <PlayerCard key={following.id} player={following} onConnect={onConnect} compact />
+                                <PlayerCard
+                                    key={following.id}
+                                    player={isOwnProfile ? { ...following, isFollowing: true } : following}
+                                    onViewProfile={onViewProfile}
+                                    onConnect={onConnect}
+                                    compact
+                                />
                             ))}
                         </div>
                     </div>

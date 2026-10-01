@@ -74,10 +74,11 @@ export interface UserProfile {
     positions: string[];
     gamesPlayed: number;
     rating: number;
-    reviews: [];
+    reviews: ProfileReview[];
     gamesAttended: [];
-    followers: [];
-    following: [];
+    followers: ProfilePerson[];
+    following: ProfilePerson[];
+    isFollowing: boolean;
     achievements: [];
     stats: {
         winRate: number;
@@ -85,6 +86,31 @@ export interface UserProfile {
         favoritePosition: string;
         memberSince: string;
     };
+}
+
+export interface ProfileReview {
+    id: string;
+    reviewerName: string;
+    reviewerAvatar?: string;
+    isOwnReview: boolean;
+    rating: number;
+    comment: string;
+    date: string;
+    helpfulCount: number;
+}
+
+export interface ProfilePerson {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar: string;
+    bio: string;
+    location: string;
+    skillLevel: UserProfile['skillLevel'];
+    positions: string[];
+    gamesPlayed: number;
+    rating: number;
+    isFollowing?: boolean;
 }
 
 export interface UserProfileInput {
@@ -262,12 +288,51 @@ export function getGame(token: string | undefined, gameId: string) {
     return request<GameRecord>(`/api/games/${encodeURIComponent(gameId)}`, { method: 'GET' }, token);
 }
 
-export function getProfiles() {
-    return request<{ data: UserProfile[] }>('/api/profiles', { method: 'GET' });
+export function getProfiles(token?: string) {
+    return request<{ data: UserProfile[] }>('/api/profiles', { method: 'GET' }, token);
 }
 
-export function getProfile(userId: string) {
-    return request<{ profile: UserProfile }>(`/api/profiles/${encodeURIComponent(userId)}`, { method: 'GET' });
+export function getProfile(userId: string, token?: string) {
+    return request<{ profile: UserProfile }>(`/api/profiles/${encodeURIComponent(userId)}`, { method: 'GET' }, token);
+}
+
+export function followProfile(token: string, userId: string) {
+    return request<{ isFollowing: boolean }>(
+        `/api/profiles/${encodeURIComponent(userId)}/follow`,
+        {
+            method: 'PUT',
+        },
+        token,
+    );
+}
+
+export function unfollowProfile(token: string, userId: string) {
+    return request<{ isFollowing: boolean }>(
+        `/api/profiles/${encodeURIComponent(userId)}/follow`,
+        {
+            method: 'DELETE',
+        },
+        token,
+    );
+}
+
+export function submitProfileReview(token: string, userId: string, rating: number, comment: string) {
+    return request<{ review: ProfileReview; profile: UserProfile }>(
+        `/api/profiles/${encodeURIComponent(userId)}/reviews`,
+        {
+            method: 'PUT',
+            body: JSON.stringify({ rating, comment }),
+        },
+        token,
+    );
+}
+
+export function deleteMyProfileReview(token: string, userId: string) {
+    return request<{ message: string; profile: UserProfile }>(
+        `/api/profiles/${encodeURIComponent(userId)}/reviews/me`,
+        { method: 'DELETE' },
+        token,
+    );
 }
 
 export function updateMyProfile(token: string, profile: UserProfileInput) {

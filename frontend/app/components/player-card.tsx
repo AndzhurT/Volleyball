@@ -40,7 +40,23 @@ export function PlayerCard({ player, onConnect, onViewProfile, compact = false }
 
     if (compact) {
         return (
-            <Card className="p-4 hover:shadow-md transition-all border border-border hover:border-primary/50 bg-card cursor-pointer">
+            <Card
+                role={onViewProfile ? 'button' : undefined}
+                tabIndex={onViewProfile ? 0 : undefined}
+                aria-label={onViewProfile ? `View ${player.name}'s profile` : undefined}
+                onClick={onViewProfile ? () => onViewProfile(player.id) : undefined}
+                onKeyDown={
+                    onViewProfile
+                        ? (event) => {
+                              if (event.target !== event.currentTarget) return;
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  onViewProfile(player.id);
+                              }
+                          }
+                        : undefined
+                }
+                className={`p-4 hover:shadow-md transition-all border border-border hover:border-primary/50 bg-card ${onViewProfile ? 'cursor-pointer' : ''}`}>
                 <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12 border-2 border-primary/20">
                         <AvatarImage src={player.avatar} alt={player.name} />
@@ -63,7 +79,11 @@ export function PlayerCard({ player, onConnect, onViewProfile, compact = false }
                     <Button
                         size="sm"
                         variant={player.isFollowing ? 'outline' : 'default'}
-                        onClick={() => onConnect?.(player.id)}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onConnect?.(player.id);
+                        }}
+                        onKeyDown={(event) => event.stopPropagation()}
                         className={!player.isFollowing ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}>
                         {player.isFollowing ? 'Following' : 'Follow'}
                     </Button>

@@ -52,7 +52,7 @@ router.get('/', optionalProtect, async (req, res, next) => {
         const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
         const filter = {};
 
-        if (!req.user || req.user.role !== "admin") {
+        if (!req.user || req.user.role !== 'admin') {
             filter.endsAt = { $gt: new Date() };
         }
 

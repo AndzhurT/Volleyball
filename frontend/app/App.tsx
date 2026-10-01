@@ -24,6 +24,7 @@ import { useAuth } from './context/AuthContext';
 import {
     createGameActionRequest,
     deleteMyGameActionRequest,
+    deleteMyProfileReview,
     getGame,
     getGames,
     getProfile,
@@ -31,9 +32,12 @@ import {
     getMyGames,
     getMyGameActionRequests,
     getStoredAuthToken,
+    followProfile,
     joinGame,
+    submitProfileReview,
     updateMyGameActionRequest,
     updateMyProfile,
+    unfollowProfile,
     type GameActionRequest,
     type GameActionRequestInput,
     type UserProfile,
@@ -50,6 +54,20 @@ type GameWithCoords = Game & {
     latitude?: number;
     longitude?: number;
 };
+
+type DirectoryProfile = Pick<
+    UserProfile,
+    | 'id'
+    | 'username'
+    | 'displayName'
+    | 'avatar'
+    | 'location'
+    | 'skillLevel'
+    | 'positions'
+    | 'gamesPlayed'
+    | 'rating'
+    | 'bio'
+> & { isFollowing?: boolean };
 
 type MyGameWithCoords = GameWithCoords & {
     durationMinutes: number;
@@ -74,7 +92,7 @@ function compareGameStart(left: Game, right: Game) {
     return `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`);
 }
 
-function toDirectoryPlayer(profile: UserProfile): Player {
+function toDirectoryPlayer(profile: DirectoryProfile): Player {
     return {
         id: profile.id,
         name: profile.displayName || profile.username,
@@ -85,6 +103,7 @@ function toDirectoryPlayer(profile: UserProfile): Player {
         gamesPlayed: profile.gamesPlayed,
         rating: profile.rating,
         bio: profile.bio,
+        isFollowing: profile.isFollowing,
     };
 }
 
@@ -92,10 +111,9 @@ function toProfilePlayer(profile: UserProfile) {
     return {
         ...toDirectoryPlayer(profile),
         gamesAttended: [],
-        followers: [],
-        following: [],
-        achievements: [],
-        reviews: [],
+        followers: profile.followers.map(toDirectoryPlayer),
+        following: profile.following.map(toDirectoryPlayer),
+        reviews: profile.reviews,
         stats: profile.stats,
     };
 }
@@ -127,8 +145,10 @@ function App() {
     const isLoggedIn = authUser !== null;
 
     useEffect(() => {
+        if (isAuthLoading) return;
         let cancelled = false;
-        getProfiles()
+        const token = getStoredAuthToken() || undefined;
+        getProfiles(token)
             .then((response) => {
                 if (!cancelled) setProfiles(response.data.map(toDirectoryPlayer));
             })
@@ -136,7 +156,7 @@ function App() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [authUser?.id, isAuthLoading]);
 
     useEffect(() => {
         if (isAuthLoading) return;
@@ -167,7 +187,7 @@ function App() {
         let cancelled = false;
         setIsProfileLoading(true);
         setProfileError('');
-        getProfile(profileId)
+        getProfile(profileId, getStoredAuthToken() || undefined)
             .then((response) => {
                 if (!cancelled) setProfileData(response.profile);
             })
@@ -223,7 +243,7 @@ function App() {
         return () => {
             cancelled = true;
         };
-    }, [authUser?.id]);
+    }, [authUser, isAuthLoading]);
 
     const handleFindGames = () => {
         if (!isLoggedIn) {
@@ -318,9 +338,37 @@ function App() {
         }
     };
 
-    const handleConnect = (playerId: string) => {
-        console.log('Connect with player:', playerId);
-        // In a real app, this would send to backend
+    const handleConnect = async (playerId: string) => {
+        if (!authUser) {
+            setIsAuthDialogOpen(true);
+            return;
+        }
+        const token = getStoredAuthToken();
+        if (!token) {
+            setIsAuthDialogOpen(true);
+            return;
+        }
+        const knownPlayer =
+            profiles.find((profile) => profile.id === playerId) ||
+            profileData?.followers.find((profile) => profile.id === playerId) ||
+            profileData?.following.find((profile) => profile.id === playerId);
+
+        try {
+            if (knownPlayer?.isFollowing) {
+                await unfollowProfile(token, playerId);
+            } else {
+                await followProfile(token, playerId);
+            }
+
+            const [profileList, viewedProfile] = await Promise.all([
+                getProfiles(token),
+                profileData ? getProfile(profileData.id, token) : Promise.resolve(null),
+            ]);
+            setProfiles(profileList.data.map(toDirectoryPlayer));
+            if (viewedProfile) setProfileData(viewedProfile.profile);
+        } catch (error) {
+            console.error('Unable to update follow status:', error);
+        }
     };
 
     const handleViewProfile = (playerId: string) => {
@@ -346,6 +394,31 @@ function App() {
         setProfiles((currentProfiles) =>
             currentProfiles.map((player) =>
                 player.id === response.profile.id ? toDirectoryPlayer(response.profile) : player,
+            ),
+        );
+    };
+
+    const handleSubmitProfileReview = async (profileId: string, rating: number, comment: string) => {
+        const token = getStoredAuthToken();
+        if (!token) throw new Error('Please sign in before submitting a review.');
+        const response = await submitProfileReview(token, profileId, rating, comment);
+        console.log(response.profile.reviews);
+        setProfileData(response.profile);
+        setProfiles((currentProfiles) =>
+            currentProfiles.map((profile) =>
+                profile.id === profileId ? toDirectoryPlayer(response.profile) : profile,
+            ),
+        );
+    };
+
+    const handleDeleteProfileReview = async (profileId: string) => {
+        const token = getStoredAuthToken();
+        if (!token) throw new Error('Please sign in before deleting a review.');
+        const response = await deleteMyProfileReview(token, profileId);
+        setProfileData(response.profile);
+        setProfiles((currentProfiles) =>
+            currentProfiles.map((profile) =>
+                profile.id === profileId ? toDirectoryPlayer(response.profile) : profile,
             ),
         );
     };
@@ -546,6 +619,13 @@ function App() {
                             onDeleteGameRequest={handleDeleteGameRequest}
                             onEditProfile={() => setIsEditProfileOpen(true)}
                             onConnect={handleConnect}
+                            onViewProfile={handleViewProfile}
+                            onSubmitReview={
+                                isLoggedIn
+                                    ? (rating, comment) => handleSubmitProfileReview(profileData.id, rating, comment)
+                                    : undefined
+                            }
+                            onDeleteReview={isLoggedIn ? () => handleDeleteProfileReview(profileData.id) : undefined}
                             onRSVP={handleRSVP}
                             onViewGameDetails={handleViewGameDetails}
                         />
