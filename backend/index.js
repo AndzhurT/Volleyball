@@ -67,7 +67,7 @@ const gameActionRequestRoutes = require('./routes/game-action-requests');
 
 app.use('/api/auth', authRoutes); // → Login: /api/auth/login
 app.use('/api/games', gameRoutes);
-app.use('/api/action-requests', gameActionRequestRoutes);
+app.use('/api/game-action-requests', gameActionRequestRoutes);
 app.use('/api/profiles', profileRoutes);
 
 app.use((err, req, res, next) => {
