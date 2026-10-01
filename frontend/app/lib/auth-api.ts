@@ -238,7 +238,7 @@ export function createGameActionRequest(
     options: { action?: 'create' | 'update'; gameId?: string } = {},
 ) {
     return request<GameActionRequest>(
-        '/api/action-requests',
+        '/api/game-action-requests',
         {
             method: 'POST',
             body: JSON.stringify({ action: options.action || 'create', gameId: options.gameId, game }),
@@ -248,12 +248,12 @@ export function createGameActionRequest(
 }
 
 export function getMyGameActionRequests(token: string) {
-    return request<{ data: GameActionRequest[] }>('/api/action-requests/mine', { method: 'GET' }, token);
+    return request<{ data: GameActionRequest[] }>('/api/game-action-requests/mine', { method: 'GET' }, token);
 }
 
 export function updateMyGameActionRequest(token: string, requestId: string, game: GameActionRequestInput) {
     return request<GameActionRequest>(
-        `/api/action-requests/${encodeURIComponent(requestId)}`,
+        `/api/game-action-requests/${encodeURIComponent(requestId)}`,
         {
             method: 'PUT',
             body: JSON.stringify({ game }),
@@ -264,7 +264,7 @@ export function updateMyGameActionRequest(token: string, requestId: string, game
 
 export function deleteMyGameActionRequest(token: string, requestId: string) {
     return request<{ message: string }>(
-        `/api/action-requests/${encodeURIComponent(requestId)}`,
+        `/api/game-action-requests/${encodeURIComponent(requestId)}`,
         {
             method: 'DELETE',
         },

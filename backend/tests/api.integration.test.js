@@ -155,7 +155,7 @@ test('registration creates a private-editable public profile with safe defaults'
         body: JSON.stringify({ email, password: 'StrongPass123' }),
     });
     const token = (await json(login)).token;
-    const actionRequest = await request('/api/action-requests', {
+    const actionRequest = await request('/api/game-action-requests', {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -730,7 +730,7 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(directCreate.status, 403);
     assert.equal(await Game.countDocuments({ title: proposedGame.title }), 0);
 
-    const createRequestResponse = await request('/api/action-requests', {
+    const createRequestResponse = await request('/api/game-action-requests', {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
         body: JSON.stringify({ action: 'create', game: proposedGame }),
@@ -741,7 +741,7 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(createRequest.status, 'pending');
 
     const pendingEdit = { ...proposedGame, title: `Pending Edit ${suffix}` };
-    const pendingEditResponse = await request(`/api/action-requests/${createRequest._id}`, {
+    const pendingEditResponse = await request(`/api/game-action-requests/${createRequest._id}`, {
         method: 'PUT',
         headers: { authorization: `Bearer ${loginBody.token}` },
         body: JSON.stringify({ game: pendingEdit }),
@@ -749,7 +749,7 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(pendingEditResponse.status, 200);
     assert.equal((await json(pendingEditResponse)).proposedGame.title, pendingEdit.title);
 
-    const disposableRequestResponse = await request('/api/action-requests', {
+    const disposableRequestResponse = await request('/api/game-action-requests', {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
         body: JSON.stringify({ action: 'create', game: { ...proposedGame, title: `Delete Pending ${suffix}` } }),
@@ -757,14 +757,14 @@ test('a user can request game creation and update, and only admins can approve',
     const disposableRequest = await json(disposableRequestResponse);
     createdActionRequestIds.add(disposableRequest._id);
 
-    const myRequests = await request('/api/action-requests/mine', {
+    const myRequests = await request('/api/game-action-requests/mine', {
         headers: { authorization: `Bearer ${loginBody.token}` },
     });
     assert.ok((await json(myRequests)).data.some((item) => item._id === createRequest._id));
 
-    const userQueue = await request('/api/action-requests');
+    const userQueue = await request('/api/game-action-requests');
     assert.equal(userQueue.status, 401);
-    const regularQueue = await request('/api/action-requests', {
+    const regularQueue = await request('/api/game-action-requests', {
         headers: { authorization: `Bearer ${loginBody.token}` },
     });
     assert.equal(regularQueue.status, 403);
@@ -773,42 +773,42 @@ test('a user can request game creation and update, and only admins can approve',
         body: JSON.stringify(adminCredentials),
     });
     const adminToken = (await json(adminLogin)).token;
-    const nonOwnerEdit = await request(`/api/action-requests/${createRequest._id}`, {
+    const nonOwnerEdit = await request(`/api/game-action-requests/${createRequest._id}`, {
         method: 'PUT',
         headers: { authorization: `Bearer ${adminToken}` },
         body: JSON.stringify({ game: proposedGame }),
     });
     assert.equal(nonOwnerEdit.status, 404);
-    const nonOwnerDelete = await request(`/api/action-requests/${disposableRequest._id}`, {
+    const nonOwnerDelete = await request(`/api/game-action-requests/${disposableRequest._id}`, {
         method: 'DELETE',
         headers: { authorization: `Bearer ${adminToken}` },
     });
     assert.equal(nonOwnerDelete.status, 404);
-    const deletePending = await request(`/api/action-requests/${disposableRequest._id}`, {
+    const deletePending = await request(`/api/game-action-requests/${disposableRequest._id}`, {
         method: 'DELETE',
         headers: { authorization: `Bearer ${loginBody.token}` },
     });
     assert.equal(deletePending.status, 200);
     createdActionRequestIds.delete(disposableRequest._id);
 
-    const adminQueue = await request('/api/action-requests?status=pending', {
+    const adminQueue = await request('/api/game-action-requests?status=pending', {
         headers: { authorization: `Bearer ${adminToken}` },
     });
     const queueBody = await json(adminQueue);
     assert.equal(adminQueue.status, 200);
     assert.ok(queueBody.data.some((item) => item._id === createRequest._id));
-    const adminDetail = await request(`/api/action-requests/${createRequest._id}`, {
+    const adminDetail = await request(`/api/game-action-requests/${createRequest._id}`, {
         headers: { authorization: `Bearer ${adminToken}` },
     });
     assert.equal(adminDetail.status, 200);
 
-    const forbiddenApproval = await request(`/api/action-requests/${createRequest._id}/approve`, {
+    const forbiddenApproval = await request(`/api/game-action-requests/${createRequest._id}/approve`, {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
     });
     assert.equal(forbiddenApproval.status, 403);
 
-    const approval = await request(`/api/action-requests/${createRequest._id}/approve`, {
+    const approval = await request(`/api/game-action-requests/${createRequest._id}/approve`, {
         method: 'POST',
         headers: { authorization: `Bearer ${adminToken}` },
     });
@@ -824,19 +824,19 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(created.durationMinutes, 90);
     assert.equal(created.lifecycleStatus, 'upcoming');
 
-    const duplicateApproval = await request(`/api/action-requests/${createRequest._id}/approve`, {
+    const duplicateApproval = await request(`/api/game-action-requests/${createRequest._id}/approve`, {
         method: 'POST',
         headers: { authorization: `Bearer ${adminToken}` },
     });
     assert.equal(duplicateApproval.status, 409);
     assert.equal(await Game.countDocuments({ title: pendingEdit.title }), 1);
-    const reviewedUpdate = await request(`/api/action-requests/${createRequest._id}`, {
+    const reviewedUpdate = await request(`/api/game-action-requests/${createRequest._id}`, {
         method: 'PUT',
         headers: { authorization: `Bearer ${loginBody.token}` },
         body: JSON.stringify({ game: proposedGame }),
     });
     assert.equal(reviewedUpdate.status, 409);
-    const reviewedDelete = await request(`/api/action-requests/${createRequest._id}`, {
+    const reviewedDelete = await request(`/api/game-action-requests/${createRequest._id}`, {
         method: 'DELETE',
         headers: { authorization: `Bearer ${loginBody.token}` },
     });
@@ -867,7 +867,7 @@ test('a user can request game creation and update, and only admins can approve',
     });
     assert.equal(directUpdate.status, 403);
 
-    const updateRequestResponse = await request('/api/action-requests', {
+    const updateRequestResponse = await request('/api/game-action-requests', {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
         body: JSON.stringify({ action: 'update', gameId: created.id, game: proposedUpdate }),
@@ -876,7 +876,7 @@ test('a user can request game creation and update, and only admins can approve',
     createdActionRequestIds.add(updateRequest._id);
     assert.equal(updateRequestResponse.status, 201);
 
-    const updateApproval = await request(`/api/action-requests/${updateRequest._id}/approve`, {
+    const updateApproval = await request(`/api/game-action-requests/${updateRequest._id}/approve`, {
         method: 'POST',
         headers: { authorization: `Bearer ${adminToken}` },
     });
@@ -885,7 +885,7 @@ test('a user can request game creation and update, and only admins can approve',
     assert.equal(updateApprovalBody.game.title, `Updated Game ${suffix}`);
     assert.equal(updateApprovalBody.request.status, 'approved');
 
-    const declinedRequestResponse = await request('/api/action-requests', {
+    const declinedRequestResponse = await request('/api/game-action-requests', {
         method: 'POST',
         headers: { authorization: `Bearer ${loginBody.token}` },
         body: JSON.stringify({
@@ -896,7 +896,7 @@ test('a user can request game creation and update, and only admins can approve',
     });
     const declinedRequest = await json(declinedRequestResponse);
     createdActionRequestIds.add(declinedRequest._id);
-    const decline = await request(`/api/action-requests/${declinedRequest._id}/decline`, {
+    const decline = await request(`/api/game-action-requests/${declinedRequest._id}/decline`, {
         method: 'POST',
         headers: { authorization: `Bearer ${adminToken}` },
         body: JSON.stringify({ reviewNote: 'Please provide more detail.' }),
@@ -920,7 +920,7 @@ test('a user can request game creation and update, and only admins can approve',
     });
     const secondLoginBody = await json(secondLogin);
 
-    const nonOwnerUpdateRequest = await request('/api/action-requests', {
+    const nonOwnerUpdateRequest = await request('/api/game-action-requests', {
         method: 'POST',
         headers: { authorization: `Bearer ${secondLoginBody.token}` },
         body: JSON.stringify({ action: 'update', gameId: created.id, game: proposedGame }),
@@ -1088,7 +1088,7 @@ test('users cannot join games whose duration has already ended', async () => {
 
 test('configured frontend origins can preflight API requests but other origins are rejected', async () => {
     const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const allowed = await request('/api/action-requests', {
+    const allowed = await request('/api/game-action-requests', {
         method: 'OPTIONS',
         headers: {
             origin: allowedOrigin,
@@ -1099,7 +1099,7 @@ test('configured frontend origins can preflight API requests but other origins a
     assert.equal(allowed.status, 204);
     assert.equal(allowed.headers.get('access-control-allow-origin'), allowedOrigin);
 
-    const rejected = await request('/api/action-requests', {
+    const rejected = await request('/api/game-action-requests', {
         method: 'OPTIONS',
         headers: { origin: 'https://untrusted.example' },
     });
