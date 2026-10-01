@@ -50,9 +50,11 @@ router.get('/', optionalProtect, async (req, res, next) => {
     try {
         const page = Math.max(1, Number(req.query.page) || 1);
         const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
-        const filter = {
-            endsAt: { $gt: new Date() },
-        };
+        const filter = {};
+
+        if (!req.user || req.user.role !== "admin") {
+            filter.endsAt = { $gt: new Date() };
+        }
 
         if (typeof req.query.skillLevel === 'string') filter.skillLevel = req.query.skillLevel;
         if (typeof req.query.type === 'string') filter.type = req.query.type;
