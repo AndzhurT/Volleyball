@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Settings, ThumbsUp, Star, Pencil, Trash2 } from 'lucide-react';
+import { MapPin, Calendar, Settings, Pencil, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
@@ -6,7 +6,6 @@ import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { GameCard, type Game } from './game-card';
 import { PlayerCard, type Player } from './player-card';
-import { Textarea } from './ui/textarea';
 import { useEffect, useRef, useState } from 'react';
 import type { GameActionRequest } from '../lib/auth-api';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
@@ -28,17 +27,6 @@ interface ProfileViewProps {
         followers: Player[];
         following: Player[];
 
-        reviews?: {
-            id: string;
-            reviewerName: string;
-            reviewerAvatar?: string;
-            isOwnReview?: boolean;
-            rating: number;
-            comment: string;
-            date: string;
-            helpfulCount: number;
-        }[];
-
         stats: {
             winRate: number;
             hoursPlayed: number;
@@ -57,8 +45,6 @@ interface ProfileViewProps {
     onEditProfile?: () => void;
     onConnect?: (playerId: string) => void;
     onViewProfile: (playerId: string) => void;
-    onSubmitReview?: (rating: number, comment: string) => Promise<void>;
-    onDeleteReview?: () => Promise<void>;
     onRSVP?: (gameId: string) => void;
     onViewGameDetails?: (gameId: string) => void;
 }
@@ -77,18 +63,9 @@ export function ProfileView({
     onEditProfile,
     onConnect,
     onViewProfile,
-    onSubmitReview,
-    onDeleteReview,
     onRSVP,
     onViewGameDetails,
 }: ProfileViewProps) {
-    const [newReview, setNewReview] = useState('');
-    const [newRating, setNewRating] = useState(0);
-    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-    const [reviewError, setReviewError] = useState('');
-    const [isEditingReview, setIsEditingReview] = useState(false);
-    const [isReviewDeleteOpen, setIsReviewDeleteOpen] = useState(false);
-    const [isDeletingReview, setIsDeletingReview] = useState(false);
     const [requestToDelete, setRequestToDelete] = useState<GameActionRequest | null>(null);
     const [requestActionError, setRequestActionError] = useState('');
     const [openGameList, setOpenGameList] = useState<'upcoming' | 'past' | null>(null);
@@ -106,16 +83,6 @@ export function ProfileView({
         `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`),
     );
     const allGamesInPanel = openGameList === 'upcoming' ? sortedUpcomingGames : sortedPastGames;
-    const ownReview = player.reviews?.find((review) => review.isOwnReview);
-
-    useEffect(() => {
-        setNewReview('');
-        setNewRating(0);
-        setIsEditingReview(false);
-        setReviewError('');
-        setIsReviewDeleteOpen(false);
-    }, [player.id]);
-
     useEffect(() => {
         if (!openGameList) return;
         if (typeof IntersectionObserver === 'undefined') return;
@@ -159,65 +126,9 @@ export function ProfileView({
         };
     }, [openGameList, visibleGameCount, allGamesInPanel.length]);
 
-    const formatReviewDate = (isoDate: string): string => {
-        const date = new Date(isoDate);
-        if (Number.isNaN(date.getTime())) return '';
-
-        const diffMs = Date.now() - date.getTime();
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffHours < 24) {
-            if (diffHours < 1) return 'Just now';
-            return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-        }
-
-        if (diffDays <= 7) {
-            return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-        }
-
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        const yyyy = date.getFullYear();
-        return `${mm}/${dd}/${yyyy}`;
-    };
-
     const showGameList = (list: 'upcoming' | 'past') => {
         setVisibleGameCount(10);
         setOpenGameList(list);
-    };
-
-    const handleSubmitReview = async () => {
-        if (newRating < 1 || newRating > 5 || !onSubmitReview) return;
-        setIsSubmittingReview(true);
-        setReviewError('');
-        try {
-            await onSubmitReview(newRating, newReview.trim());
-            setNewReview('');
-            setNewRating(0);
-            setIsEditingReview(false);
-        } catch (error) {
-            setReviewError(error instanceof Error ? error.message : 'Unable to submit your review.');
-        } finally {
-            setIsSubmittingReview(false);
-        }
-    };
-
-    const handleDeleteReview = async () => {
-        if (!onDeleteReview) return;
-        setIsDeletingReview(true);
-        setReviewError('');
-        try {
-            await onDeleteReview();
-            setIsReviewDeleteOpen(false);
-            setIsEditingReview(false);
-            setNewReview('');
-            setNewRating(0);
-        } catch (error) {
-            setReviewError(error instanceof Error ? error.message : 'Unable to delete your review.');
-        } finally {
-            setIsDeletingReview(false);
-        }
     };
 
     return (
@@ -324,10 +235,6 @@ export function ProfileView({
                                 <div className="text-sm text-muted-foreground">Games Played</div>
                             </div>
                             <div className="text-center p-4 bg-muted/30 rounded-lg">
-                                <div className="text-2xl font-medium mb-1">{player.rating.toFixed(1)}</div>
-                                <div className="text-sm text-muted-foreground">Rating</div>
-                            </div>
-                            <div className="text-center p-4 bg-muted/30 rounded-lg">
                                 <div className="text-2xl font-medium mb-1">{player.stats.hoursPlayed}</div>
                                 <div className="text-sm text-muted-foreground">Hours</div>
                             </div>
@@ -338,10 +245,9 @@ export function ProfileView({
 
             {/* Tabs Section */}
             <Tabs defaultValue="games" className="w-full">
-                <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-5' : 'grid-cols-4'} bg-muted/50`}>
+                <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-4' : 'grid-cols-3'} bg-muted/50`}>
                     <TabsTrigger value="games">Games</TabsTrigger>
                     {isOwnProfile && <TabsTrigger value="requests">Requests</TabsTrigger>}
-                    <TabsTrigger value="reviews">Reviews</TabsTrigger>
                     <TabsTrigger value="followers">Followers</TabsTrigger>
                     <TabsTrigger value="following">Following</TabsTrigger>
                 </TabsList>
@@ -581,166 +487,6 @@ export function ProfileView({
                                 }}>
                                 Delete Request
                             </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-
-                <TabsContent value="reviews" className="space-y-6 mt-6">
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-2xl">Player Reviews</h2>
-                            <div className="flex items-center gap-2">
-                                <Star className="w-5 h-5 fill-warning text-warning" />
-                                <span className="text-xl">{player.rating.toFixed(1)}</span>
-                                <span className="text-muted-foreground">({player.reviews?.length || 0})</span>
-                            </div>
-                        </div>
-
-                        {!isOwnProfile && onSubmitReview && (!ownReview || isEditingReview) && (
-                            <Card className="p-6 mb-6">
-                                <h3>{ownReview ? 'Edit Your Review' : 'Leave a Review'}</h3>
-
-                                {/* Rating */}
-                                <div className="flex gap-2">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <button
-                                            key={star}
-                                            type="button"
-                                            aria-label={`${star} ${star === 1 ? 'star' : 'stars'}`}
-                                            aria-pressed={newRating === star}
-                                            onClick={() => setNewRating(star)}>
-                                            <Star
-                                                fill={star <= newRating ? 'currentColor' : 'none'}
-                                                className={`w-6 h-6 ${
-                                                    star <= newRating ? 'text-warning' : 'text-muted-foreground'
-                                                }`}
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* Text */}
-                                <Textarea
-                                    value={newReview}
-                                    onChange={(e) => setNewReview(e.target.value)}
-                                    placeholder="Write a comment (optional)..."
-                                />
-
-                                {reviewError && (
-                                    <p role="alert" className="text-sm text-destructive">
-                                        {reviewError}
-                                    </p>
-                                )}
-                                <Button
-                                    onClick={() => void handleSubmitReview()}
-                                    disabled={newRating === 0 || isSubmittingReview}
-                                    className="mt-3">
-                                    {isSubmittingReview ? 'Saving...' : ownReview ? 'Save Review' : 'Submit Review'}
-                                </Button>
-                                {ownReview && (
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => {
-                                            setIsEditingReview(false);
-                                            setNewRating(0);
-                                            setNewReview('');
-                                            setReviewError('');
-                                        }}
-                                        disabled={isSubmittingReview}
-                                        className="ml-2 mt-3">
-                                        Cancel
-                                    </Button>
-                                )}
-                            </Card>
-                        )}
-
-                        {/* Review List */}
-                        <div className="space-y-4">
-                            {player.reviews?.length ? (
-                                player.reviews.map((review) => (
-                                    <Card key={review.id} className="p-4 gap-3">
-                                        <div className="flex justify-between">
-                                            <h4>{review.reviewerName}</h4>
-                                            <span className="text-sm text-muted-foreground">
-                                                {formatReviewDate(review.date)}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-1">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <Star
-                                                    key={star}
-                                                    fill={star <= review.rating ? 'currentColor' : 'none'}
-                                                    className={`w-4 h-4 ${
-                                                        star <= review.rating ? 'text-warning' : 'text-muted-foreground'
-                                                    }`}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {review.comment?.trim() ? (
-                                            <p className="text-muted-foreground">{review.comment}</p>
-                                        ) : null}
-
-                                        <Button variant="ghost" size="sm" className="mt-2 self-start">
-                                            <ThumbsUp className="w-4 h-4 mr-1" />
-                                            {review.helpfulCount}
-                                        </Button>
-
-                                        {review.isOwnReview && !isOwnProfile && (
-                                            <div className="mt-2 flex gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setNewRating(review.rating);
-                                                        setNewReview(review.comment);
-                                                        setIsEditingReview(true);
-                                                        setReviewError('');
-                                                    }}>
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    Edit
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() => setIsReviewDeleteOpen(true)}>
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Delete
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </Card>
-                                ))
-                            ) : (
-                                <p className="text-muted-foreground">No reviews yet</p>
-                            )}
-                        </div>
-                    </div>
-                </TabsContent>
-
-                <AlertDialog open={isReviewDeleteOpen} onOpenChange={setIsReviewDeleteOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Delete your review?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Your rating and comment will be removed from this player’s profile.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        {reviewError && (
-                            <p role="alert" className="text-sm text-destructive">
-                                {reviewError}
-                            </p>
-                        )}
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={isDeletingReview}>Cancel</AlertDialogCancel>
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                disabled={isDeletingReview}
-                                onClick={() => void handleDeleteReview()}>
-                                {isDeletingReview ? 'Deleting...' : 'Delete Review'}
-                            </Button>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

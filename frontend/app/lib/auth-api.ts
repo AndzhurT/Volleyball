@@ -73,8 +73,6 @@ export interface UserProfile {
     skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
     positions: string[];
     gamesPlayed: number;
-    rating: number;
-    reviews: ProfileReview[];
     gamesAttended: [];
     followers: ProfilePerson[];
     following: ProfilePerson[];
@@ -88,17 +86,6 @@ export interface UserProfile {
     };
 }
 
-export interface ProfileReview {
-    id: string;
-    reviewerName: string;
-    reviewerAvatar?: string;
-    isOwnReview: boolean;
-    rating: number;
-    comment: string;
-    date: string;
-    helpfulCount: number;
-}
-
 export interface ProfilePerson {
     id: string;
     username: string;
@@ -109,7 +96,6 @@ export interface ProfilePerson {
     skillLevel: UserProfile['skillLevel'];
     positions: string[];
     gamesPlayed: number;
-    rating: number;
     isFollowing?: boolean;
 }
 
@@ -312,25 +298,6 @@ export function unfollowProfile(token: string, userId: string) {
         {
             method: 'DELETE',
         },
-        token,
-    );
-}
-
-export function submitProfileReview(token: string, userId: string, rating: number, comment: string) {
-    return request<{ review: ProfileReview; profile: UserProfile }>(
-        `/api/profiles/${encodeURIComponent(userId)}/reviews`,
-        {
-            method: 'PUT',
-            body: JSON.stringify({ rating, comment }),
-        },
-        token,
-    );
-}
-
-export function deleteMyProfileReview(token: string, userId: string) {
-    return request<{ message: string; profile: UserProfile }>(
-        `/api/profiles/${encodeURIComponent(userId)}/reviews/me`,
-        { method: 'DELETE' },
         token,
     );
 }

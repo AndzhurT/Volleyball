@@ -24,7 +24,6 @@ import { useAuth } from './context/AuthContext';
 import {
     createGameActionRequest,
     deleteMyGameActionRequest,
-    deleteMyProfileReview,
     getGame,
     getGames,
     getProfile,
@@ -34,7 +33,6 @@ import {
     getStoredAuthToken,
     followProfile,
     joinGame,
-    submitProfileReview,
     updateMyGameActionRequest,
     updateMyProfile,
     unfollowProfile,
@@ -57,16 +55,7 @@ type GameWithCoords = Game & {
 
 type DirectoryProfile = Pick<
     UserProfile,
-    | 'id'
-    | 'username'
-    | 'displayName'
-    | 'avatar'
-    | 'location'
-    | 'skillLevel'
-    | 'positions'
-    | 'gamesPlayed'
-    | 'rating'
-    | 'bio'
+    'id' | 'username' | 'displayName' | 'avatar' | 'location' | 'skillLevel' | 'positions' | 'gamesPlayed' | 'bio'
 > & { isFollowing?: boolean };
 
 type MyGameWithCoords = GameWithCoords & {
@@ -101,7 +90,6 @@ function toDirectoryPlayer(profile: DirectoryProfile): Player {
         skillLevel: profile.skillLevel,
         positions: profile.positions,
         gamesPlayed: profile.gamesPlayed,
-        rating: profile.rating,
         bio: profile.bio,
         isFollowing: profile.isFollowing,
     };
@@ -113,7 +101,6 @@ function toProfilePlayer(profile: UserProfile) {
         gamesAttended: [],
         followers: profile.followers.map(toDirectoryPlayer),
         following: profile.following.map(toDirectoryPlayer),
-        reviews: profile.reviews,
         stats: profile.stats,
     };
 }
@@ -398,31 +385,6 @@ function App() {
         );
     };
 
-    const handleSubmitProfileReview = async (profileId: string, rating: number, comment: string) => {
-        const token = getStoredAuthToken();
-        if (!token) throw new Error('Please sign in before submitting a review.');
-        const response = await submitProfileReview(token, profileId, rating, comment);
-        console.log(response.profile.reviews);
-        setProfileData(response.profile);
-        setProfiles((currentProfiles) =>
-            currentProfiles.map((profile) =>
-                profile.id === profileId ? toDirectoryPlayer(response.profile) : profile,
-            ),
-        );
-    };
-
-    const handleDeleteProfileReview = async (profileId: string) => {
-        const token = getStoredAuthToken();
-        if (!token) throw new Error('Please sign in before deleting a review.');
-        const response = await deleteMyProfileReview(token, profileId);
-        setProfileData(response.profile);
-        setProfiles((currentProfiles) =>
-            currentProfiles.map((profile) =>
-                profile.id === profileId ? toDirectoryPlayer(response.profile) : profile,
-            ),
-        );
-    };
-
     const handleLogout = async () => {
         await logout();
         setViewedProfileId(null);
@@ -620,12 +582,6 @@ function App() {
                             onEditProfile={() => setIsEditProfileOpen(true)}
                             onConnect={handleConnect}
                             onViewProfile={handleViewProfile}
-                            onSubmitReview={
-                                isLoggedIn
-                                    ? (rating, comment) => handleSubmitProfileReview(profileData.id, rating, comment)
-                                    : undefined
-                            }
-                            onDeleteReview={isLoggedIn ? () => handleDeleteProfileReview(profileData.id) : undefined}
                             onRSVP={handleRSVP}
                             onViewGameDetails={handleViewGameDetails}
                         />

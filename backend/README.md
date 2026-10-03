@@ -80,8 +80,6 @@ docker compose up --build
 | PUT    | `/api/profiles/me`                 | User JWT       | Edit the current user's profile                            |
 | PUT    | `/api/profiles/:userId/follow`     | User JWT       | Follow a profile                                           |
 | DELETE | `/api/profiles/:userId/follow`     | User JWT       | Unfollow a profile                                         |
-| PUT    | `/api/profiles/:userId/reviews`    | User JWT       | Create or update a 1-5 star player review                  |
-| DELETE | `/api/profiles/:userId/reviews/me` | User JWT       | Delete the current user's review                           |
 | GET    | `/api/games`                       | Optional JWT   | List upcoming/ongoing games; hides addresses without a JWT |
 | GET    | `/api/games/mine`                  | User JWT       | List games the current user has joined                     |
 | GET    | `/api/games/:id`                   | Optional JWT   | Get a game; hides address and coordinates without JWT      |

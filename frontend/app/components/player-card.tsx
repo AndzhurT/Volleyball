@@ -1,4 +1,4 @@
-import { MapPin, Star, Activity } from 'lucide-react';
+import { MapPin, Activity } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
@@ -12,7 +12,6 @@ export interface Player {
     skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
     positions: string[];
     gamesPlayed: number;
-    rating: number;
     bio?: string;
     isFollowing?: boolean;
 }
@@ -70,9 +69,6 @@ export function PlayerCard({ player, onConnect, onViewProfile, compact = false }
                     <div className="flex-1 overflow-hidden">
                         <h4 className="truncate">{player.name}</h4>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Star className="w-3 h-3 fill-warning text-warning" />
-                            <span>{player.rating.toFixed(1)}</span>
-                            <span>•</span>
                             <span>{player.gamesPlayed} games</span>
                         </div>
                     </div>
@@ -125,13 +121,6 @@ export function PlayerCard({ player, onConnect, onViewProfile, compact = false }
                         <div>
                             <div className="text-sm text-muted-foreground">Games Played</div>
                             <div className="font-medium">{player.gamesPlayed}</div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Star className="w-4 h-4 text-warning fill-warning" />
-                        <div>
-                            <div className="text-sm text-muted-foreground">Rating</div>
-                            <div className="font-medium">{player.rating.toFixed(1)}</div>
                         </div>
                     </div>
                 </div>

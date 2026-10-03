@@ -8,7 +8,6 @@ const User = require('../models/User');
 const Game = require('../models/Game');
 const Profile = require('../models/Profile');
 const UserFollow = require('../models/UserFollow');
-const PlayerReview = require('../models/PlayerReview');
 const GameActionRequest = require('../models/GameActionRequest');
 const AuthIdentity = require('../models/AuthIdentity');
 const OAuthLogin = require('../models/OAuthLogin');
@@ -56,12 +55,6 @@ test.afterEach(async () => {
             $or: [
                 { followerId: { $in: users.map((user) => user._id) } },
                 { followedId: { $in: users.map((user) => user._id) } },
-            ],
-        }),
-        PlayerReview.deleteMany({
-            $or: [
-                { reviewerUserId: { $in: users.map((user) => user._id) } },
-                { profileUserId: { $in: users.map((user) => user._id) } },
             ],
         }),
         ...Array.from(createdGameIds, (id) => Game.deleteOne({ _id: id })),
@@ -276,89 +269,6 @@ test('users can follow and unfollow other profiles and see both relationship lis
         ).profile.followers.length,
         0,
     );
-});
-
-test('users can submit one required-star review for another profile and update it', async () => {
-    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const reviewerEmail = `reviewer-${suffix}@example.com`;
-    const profileEmail = `review-target-${suffix}@example.com`;
-    createdEmails.add(reviewerEmail);
-    createdEmails.add(profileEmail);
-
-    const reviewerRegistration = await request('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ username: `reviewer-${suffix}`, email: reviewerEmail, password: 'StrongPass123' }),
-    });
-    const profileRegistration = await request('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ username: `target-${suffix}`, email: profileEmail, password: 'StrongPass123' }),
-    });
-    const reviewerId = (await json(reviewerRegistration)).user.id;
-    const profileId = (await json(profileRegistration)).user.id;
-    const login = await request('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email: reviewerEmail, password: 'StrongPass123' }),
-    });
-    const token = (await json(login)).token;
-
-    const unauthenticated = await request(`/api/profiles/${profileId}/reviews`, {
-        method: 'PUT',
-        body: JSON.stringify({ rating: 5, comment: 'Great player' }),
-    });
-    assert.equal(unauthenticated.status, 401);
-
-    const selfReview = await request(`/api/profiles/${reviewerId}/reviews`, {
-        method: 'PUT',
-        headers: { authorization: `Bearer ${token}` },
-        body: JSON.stringify({ rating: 5, comment: 'Self review' }),
-    });
-    assert.equal(selfReview.status, 400);
-
-    const invalidRating = await request(`/api/profiles/${profileId}/reviews`, {
-        method: 'PUT',
-        headers: { authorization: `Bearer ${token}` },
-        body: JSON.stringify({ rating: 0, comment: 'Bad rating' }),
-    });
-    assert.equal(invalidRating.status, 400);
-
-    const reviewResponse = await request(`/api/profiles/${profileId}/reviews`, {
-        method: 'PUT',
-        headers: { authorization: `Bearer ${token}` },
-        body: JSON.stringify({ rating: 4, comment: 'Solid teammate.' }),
-    });
-    assert.equal(reviewResponse.status, 200);
-
-    const updateResponse = await request(`/api/profiles/${profileId}/reviews`, {
-        method: 'PUT',
-        headers: { authorization: `Bearer ${token}` },
-        body: JSON.stringify({ rating: 5, comment: 'Excellent teammate.' }),
-    });
-    assert.equal(updateResponse.status, 200);
-    assert.equal(await PlayerReview.countDocuments({ profileUserId: profileId, reviewerUserId: reviewerId }), 1);
-
-    const publicProfile = await request(`/api/profiles/${profileId}`);
-    const profile = (await json(publicProfile)).profile;
-    assert.equal(profile.rating, 5);
-    assert.equal(profile.reviews.length, 1);
-    assert.equal(profile.reviews[0].reviewerName, `reviewer-${suffix}`);
-    assert.equal(profile.reviews[0].comment, 'Excellent teammate.');
-
-    const reviewerProfile = await request(`/api/profiles/${profileId}`, {
-        headers: { authorization: `Bearer ${token}` },
-    });
-    const reviewerProfileBody = (await json(reviewerProfile)).profile;
-    assert.equal(reviewerProfileBody.reviews[0].isOwnReview, true);
-
-    const deleteReview = await request(`/api/profiles/${profileId}/reviews/me`, {
-        method: 'DELETE',
-        headers: { authorization: `Bearer ${token}` },
-    });
-    assert.equal(deleteReview.status, 200);
-    assert.equal((await json(deleteReview)).profile.rating, 0);
-    const profileAfterDelete = await request(`/api/profiles/${profileId}`, {
-        headers: { authorization: `Bearer ${token}` },
-    });
-    assert.equal((await json(profileAfterDelete)).profile.reviews.length, 0);
 });
 
 test('duplicate email and username accounts are rejected', async () => {
