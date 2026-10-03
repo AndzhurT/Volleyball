@@ -9,6 +9,7 @@ const Game = require('../models/Game');
 const Profile = require('../models/Profile');
 const UserFollow = require('../models/UserFollow');
 const GameActionRequest = require('../models/GameActionRequest');
+const Notification = require('../models/Notification');
 const AuthIdentity = require('../models/AuthIdentity');
 const OAuthLogin = require('../models/OAuthLogin');
 
@@ -48,15 +49,14 @@ test.before(async () => {
 
 test.afterEach(async () => {
     const users = await User.find({ email: { $in: [...createdEmails] } }).select('_id');
+    const userIds = users.map((user) => user._id);
     await Promise.all([
         ...Array.from(createdEmails, (email) => User.deleteOne({ email })),
-        Profile.deleteMany({ userId: { $in: users.map((user) => user._id) } }),
+        Profile.deleteMany({ userId: { $in: userIds } }),
         UserFollow.deleteMany({
-            $or: [
-                { followerId: { $in: users.map((user) => user._id) } },
-                { followedId: { $in: users.map((user) => user._id) } },
-            ],
+            $or: [{ followerId: { $in: userIds } }, { followedId: { $in: userIds } }],
         }),
+        Notification.deleteMany({ recipientId: { $in: userIds } }),
         ...Array.from(createdGameIds, (id) => Game.deleteOne({ _id: id })),
         ...Array.from(createdActionRequestIds, (id) => GameActionRequest.deleteOne({ _id: id })),
         ...Array.from(createdIdentityIds, (id) => AuthIdentity.deleteOne({ _id: id })),
@@ -1014,4 +1014,281 @@ test('configured frontend origins can preflight API requests but other origins a
         headers: { origin: 'https://untrusted.example' },
     });
     assert.equal(rejected.status, 403);
+});
+
+test('following a user creates a follow notification for the followed user', async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email1 = `follow-notif-1-${suffix}@example.com`;
+    const email2 = `follow-notif-2-${suffix}@example.com`;
+    createdEmails.add(email1);
+    createdEmails.add(email2);
+
+    const user1 = await User.create({
+        username: `follow-notif-1-${suffix}`,
+        email: email1,
+        role: 'user',
+    });
+    const user2 = await User.create({
+        username: `follow-notif-2-${suffix}`,
+        email: email2,
+        role: 'user',
+    });
+
+    await Profile.create({ userId: user1._id, displayName: 'User One' });
+    await Profile.create({ userId: user2._id, displayName: 'User Two' });
+
+    const token2 = jwt.sign({ id: user2._id, role: user2.role }, process.env.JWT_SECRET);
+
+    // user2 follows user1
+    const res = await request(`/api/profiles/${user1._id}/follow`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${token2}` },
+    });
+    assert.ok([200, 201].includes(res.status), `unexpected status ${res.status}`);
+
+    const notifs = await Notification.find({ recipientId: user1._id });
+    assert.equal(notifs.length, 1);
+    assert.equal(notifs[0].type, 'follow'); // adjust if your type is different
+    assert.equal(String(notifs[0].actorId), String(user2._id));
+    assert.equal(notifs[0].readAt, null);
+});
+
+test('GET /api/notifications returns notifications and unread count', async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email = `notif-list-${suffix}@example.com`;
+    createdEmails.add(email);
+
+    const user = await User.create({
+        username: `notif-list-${suffix}`,
+        email,
+        role: 'user',
+    });
+    await Profile.create({ userId: user._id, displayName: 'List User' });
+
+    await Notification.create([
+        {
+            recipientId: user._id,
+            type: 'follow',
+            title: 'New follower',
+            message: 'Someone followed you',
+            actorId: user._id,
+            entityType: 'profile',
+            entityId: String(user._id),
+            eventKey: `follow:${user._id}:${user._id}`,
+        },
+        {
+            recipientId: user._id,
+            type: 'game-ended',
+            title: 'Game ended',
+            message: 'Your game has ended',
+            readAt: new Date(),
+            entityType: 'game',
+            entityId: new mongoose.Types.ObjectId().toString(),
+            eventKey: `game-ended:${user._id}:${Date.now()}`,
+        },
+    ]);
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET);
+
+    const res = await request('/api/notifications', {
+        headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(res.status, 200);
+
+    const body = await json(res);
+    assert.ok(Array.isArray(body.data));
+    assert.equal(body.data.length, 2);
+    assert.equal(body.unreadCount, 1);
+
+    const first = body.data[0];
+    assert.ok(first.id);
+    assert.ok(first.type);
+    assert.ok('title' in first);
+    assert.ok('message' in first);
+    assert.ok('readAt' in first);
+    assert.ok('createdAt' in first);
+});
+
+test('GET /api/notifications/unread-count returns the correct count', async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email = `notif-count-${suffix}@example.com`;
+    createdEmails.add(email);
+
+    const user = await User.create({
+        username: `notif-count-${suffix}`,
+        email,
+        role: 'user',
+    });
+    await Profile.create({ userId: user._id, displayName: 'Count User' });
+
+    await Notification.create([
+        {
+            recipientId: user._id,
+            type: 'follow',
+            title: 'A',
+            message: 'a',
+            entityType: 'profile',
+            entityId: String(user._id),
+            eventKey: `follow-a:${user._id}`,
+        },
+        {
+            recipientId: user._id,
+            type: 'follow',
+            title: 'B',
+            message: 'b',
+            entityType: 'profile',
+            entityId: String(user._id),
+            eventKey: `follow-b:${user._id}`,
+        },
+        {
+            recipientId: user._id,
+            type: 'follow',
+            title: 'C',
+            message: 'c',
+            readAt: new Date(),
+            entityType: 'profile',
+            entityId: String(user._id),
+            eventKey: `follow-c:${user._id}`,
+        },
+    ]);
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET);
+
+    const res = await request('/api/notifications/unread-count', {
+        headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(res.status, 200);
+
+    const body = await json(res);
+    assert.equal(body.count, 2);
+});
+
+test('PUT /api/notifications/read-all marks all notifications as read', async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email = `notif-readall-${suffix}@example.com`;
+    createdEmails.add(email);
+
+    const user = await User.create({
+        username: `notif-readall-${suffix}`,
+        email,
+        role: 'user',
+    });
+    await Profile.create({ userId: user._id, displayName: 'ReadAll User' });
+
+    await Notification.create([
+        {
+            recipientId: user._id,
+            type: 'follow',
+            title: 'A',
+            message: 'a',
+            entityType: 'profile',
+            entityId: String(user._id),
+            eventKey: `follow-a:${user._id}`,
+        },
+        {
+            recipientId: user._id,
+            type: 'follow',
+            title: 'B',
+            message: 'b',
+            entityType: 'profile',
+            entityId: String(user._id),
+            eventKey: `follow-b:${user._id}`,
+        },
+    ]);
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET);
+
+    const res = await request('/api/notifications/read-all', {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(res.status, 200);
+
+    const unread = await Notification.countDocuments({
+        recipientId: user._id,
+        readAt: null,
+    });
+    assert.equal(unread, 0);
+});
+
+test('PUT /api/notifications/:id/read marks a single notification as read', async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email = `notif-readone-${suffix}@example.com`;
+    createdEmails.add(email);
+
+    const user = await User.create({
+        username: `notif-readone-${suffix}`,
+        email,
+        role: 'user',
+    });
+    await Profile.create({ userId: user._id, displayName: 'ReadOne User' });
+
+    const [notif] = await Notification.create([
+        {
+            recipientId: user._id,
+            type: 'follow',
+            title: 'A',
+            message: 'a',
+            entityType: 'profile',
+            entityId: String(user._id),
+            eventKey: `follow-one:${user._id}`,
+        },
+    ]);
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET);
+
+    const res = await request(`/api/notifications/${notif._id}/read`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(res.status, 200);
+
+    const body = await json(res);
+    assert.ok(body.notification);
+    assert.ok(body.notification.readAt);
+
+    const updated = await Notification.findById(notif._id);
+    assert.ok(updated.readAt);
+});
+
+test("PUT /api/notifications/:id/read returns 404 for another user's notification", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const email1 = `notif-owner-${suffix}@example.com`;
+    const email2 = `notif-other-${suffix}@example.com`;
+    createdEmails.add(email1);
+    createdEmails.add(email2);
+
+    const owner = await User.create({
+        username: `notif-owner-${suffix}`,
+        email: email1,
+        role: 'user',
+    });
+    const other = await User.create({
+        username: `notif-other-${suffix}`,
+        email: email2,
+        role: 'user',
+    });
+
+    await Profile.create({ userId: owner._id, displayName: 'Owner' });
+    await Profile.create({ userId: other._id, displayName: 'Other' });
+
+    const [notif] = await Notification.create([
+        {
+            recipientId: owner._id,
+            type: 'follow',
+            title: 'A',
+            message: 'a',
+            entityType: 'profile',
+            entityId: String(owner._id),
+            eventKey: `follow-owner:${owner._id}`,
+        },
+    ]);
+
+    const tokenOther = jwt.sign({ id: other._id, role: other.role }, process.env.JWT_SECRET);
+
+    const res = await request(`/api/notifications/${notif._id}/read`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${tokenOther}` },
+    });
+    assert.equal(res.status, 404);
 });

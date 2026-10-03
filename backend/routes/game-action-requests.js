@@ -4,6 +4,7 @@ const Game = require('../models/Game');
 const GameActionRequest = require('../models/GameActionRequest');
 const { protect, admin } = require('../middleware/auth');
 const { validateGameInput } = require('../utils/validation');
+const { notifyGameRequestProcessed } = require('../utils/notifications');
 
 const router = express.Router();
 
@@ -193,6 +194,11 @@ router.post('/:id/approve', protect, admin, async (req, res, next) => {
         actionRequest.status = 'approved';
         await actionRequest.save();
         await populateRequest(actionRequest);
+        try {
+            await notifyGameRequestProcessed({ actionRequest, adminId: req.user.id, status: 'approved' });
+        } catch (notificationError) {
+            console.error('Unable to create game request approval notification:', notificationError);
+        }
         res.json({ request: actionRequest, game });
     } catch (err) {
         if (actionRequest?._id) {
@@ -231,6 +237,11 @@ router.post('/:id/decline', protect, admin, async (req, res, next) => {
         }
 
         await populateRequest(actionRequest);
+        try {
+            await notifyGameRequestProcessed({ actionRequest, adminId: req.user.id, status: 'declined' });
+        } catch (notificationError) {
+            console.error('Unable to create game request decline notification:', notificationError);
+        }
         res.json(actionRequest);
     } catch (err) {
         next(err);

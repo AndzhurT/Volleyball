@@ -64,11 +64,13 @@ app.get('/', (req, res) => {
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/games');
 const gameActionRequestRoutes = require('./routes/game-action-requests');
+const notificationRoutes = require('./routes/notifications');
 
 app.use('/api/auth', authRoutes); // → Login: /api/auth/login
 app.use('/api/games', gameRoutes);
 app.use('/api/game-action-requests', gameActionRequestRoutes);
 app.use('/api/profiles', profileRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || err.status || 500;

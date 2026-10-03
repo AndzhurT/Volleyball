@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Home, MapPin, User, Plus, Users, Bell, LogIn, LogOut } from 'lucide-react';
+import { Home, MapPin, User, Plus, Users, LogIn, LogOut } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Dashboard } from './components/dashboard';
@@ -10,6 +10,7 @@ import { EditProfileDialog } from './components/edit-profile-dialog';
 import { GameDetailsDialog } from './components/game-details-dialog';
 import { AuthDialog } from './components/auth-dialog';
 import { PlayersViewOption1 } from './components/players-view-option1';
+import { NotificationsBell } from './components/notifications-bell';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -455,10 +456,7 @@ function App() {
                                         <span className="hidden sm:inline">Create Game</span>
                                     </Button>
 
-                                    <Button variant="ghost" size="icon" className="relative">
-                                        <Bell className="w-5 h-5" />
-                                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-                                    </Button>
+                                    <NotificationsBell />
 
                                     <Button
                                         variant={currentView === 'profile' ? 'default' : 'ghost'}

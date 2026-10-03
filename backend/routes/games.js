@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Game = require('../models/Game');
 const { protect, admin, optionalProtect } = require('../middleware/auth');
 const { validateGameInput } = require('../utils/validation');
+const { notifyGameJoin, notifyGameDeleted } = require('../utils/notifications');
 
 const router = express.Router();
 
@@ -166,6 +167,11 @@ router.post('/:id/join', protect, async (req, res, next) => {
         }
 
         const game = await Game.findById(req.params.id).populate('createdBy participants', '_id username');
+        try {
+            await notifyGameJoin({ game, userId: req.user.id });
+        } catch (notificationError) {
+            console.error('Unable to create game-join notifications:', notificationError);
+        }
         res.json(serializeGame(game, true));
     } catch (err) {
         next(err);
@@ -196,6 +202,11 @@ router.delete('/:id', protect, async (req, res, next) => {
             return res.status(403).json({ message: 'Only the game creator or an admin can delete this game' });
         }
         await game.deleteOne();
+        try {
+            await notifyGameDeleted({ game, actorId: req.user.id });
+        } catch (notificationError) {
+            console.error('Unable to create game-deletion notifications:', notificationError);
+        }
         res.json({ message: 'Game deleted successfully' });
     } catch (err) {
         next(err);

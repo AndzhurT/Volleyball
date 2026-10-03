@@ -1,19 +1,26 @@
 {
-    "name": "Volleyball Frontend Dev Container",
-    "dockerComposeFile": "../../docker-compose.dev.yml",
-    "service": "frontend",
-    "workspaceFolder": "/app",
-    "forwardPorts": [5173],
-    "portsAttributes": {
-        "5173": {
-            "label": "Vite Dev Server",
-            "onAutoForward": "openBrowser"
-        }
-    },
-    "postCreateCommand": "npm install --include=dev",
-    "customizations": {
-        "vscode": {
-            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
-        }
+  "name": "Volleyball Frontend Dev Container",
+  "dockerComposeFile": "../../docker-compose.dev.yml",
+  "service": "frontend",
+  "workspaceFolder": "/app",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "openBrowser"
     }
+  },
+  "postCreateCommand": "npm install --include=dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ltmoerdani.opencode-copilot-chat"
+      ]
+    }
+  },
+  "features": {
+    "ghcr.io/sliekens/devcontainer-features/opencode:1": {}
+  }
 }

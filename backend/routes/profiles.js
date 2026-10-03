@@ -5,6 +5,7 @@ const Profile = require('../models/Profile');
 const UserFollow = require('../models/UserFollow');
 const { protect, optionalProtect } = require('../middleware/auth');
 const { validateProfileInput } = require('../utils/validation');
+const { notifyFollow } = require('../utils/notifications');
 
 const router = express.Router();
 
@@ -164,11 +165,19 @@ router.put('/:userId/follow', protect, async (req, res, next) => {
             return res.status(400).json({ message: 'You cannot follow yourself' });
         if (!(await User.exists({ _id: userId }))) return res.status(404).json({ message: 'User not found' });
 
+        const alreadyFollowing = await UserFollow.exists({ followerId: req.user.id, followedId: userId });
         await UserFollow.updateOne(
             { followerId: req.user.id, followedId: userId },
             { $setOnInsert: { followerId: req.user.id, followedId: userId } },
             { upsert: true },
         );
+        if (!alreadyFollowing) {
+            try {
+                await notifyFollow({ followerId: req.user.id, followedId: userId });
+            } catch (notificationError) {
+                console.error('Unable to create follow notification:', notificationError);
+            }
+        }
         res.json({ isFollowing: true });
     } catch (err) {
         if (err.code === 11000) return res.json({ isFollowing: true });

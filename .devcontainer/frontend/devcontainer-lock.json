@@ -1,0 +1,9 @@
+{
+  "features": {
+    "ghcr.io/sliekens/devcontainer-features/opencode:1": {
+      "version": "1.0.3",
+      "resolved": "ghcr.io/sliekens/devcontainer-features/opencode@sha256:0391045ce93403ce24ccc9a5e69473a652249f8b8967b59291fd531cc6430dbc",
+      "integrity": "sha256:0391045ce93403ce24ccc9a5e69473a652249f8b8967b59291fd531cc6430dbc"
+    }
+  }
+}

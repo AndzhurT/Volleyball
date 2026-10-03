@@ -313,6 +313,42 @@ export function updateMyProfile(token: string, profile: UserProfileInput) {
     );
 }
 
+export interface NotificationItem {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    actor: { id: string; username: string } | null;
+    entityType: string;
+    entityId: string;
+    readAt: string | null;
+    createdAt: string;
+}
+
+export function getNotifications(token: string) {
+    return request<{ data: NotificationItem[]; unreadCount: number }>(
+        '/api/notifications',
+        { method: 'GET' },
+        token,
+    );
+}
+
+export function getUnreadNotificationCount(token: string) {
+    return request<{ count: number }>('/api/notifications/unread-count', { method: 'GET' }, token);
+}
+
+export function markNotificationRead(token: string, id: string) {
+    return request<{ notification: NotificationItem }>(
+        `/api/notifications/${encodeURIComponent(id)}/read`,
+        { method: 'PUT' },
+        token,
+    );
+}
+
+export function markAllNotificationsRead(token: string) {
+    return request<{ message: string }>('/api/notifications/read-all', { method: 'PUT' }, token);
+}
+
 export function storeAuthToken(token: string, rememberMe: boolean) {
     sessionStorage.removeItem('volleyconnect.authToken');
 
