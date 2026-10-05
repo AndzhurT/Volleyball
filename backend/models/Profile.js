@@ -1,5 +1,20 @@
 const mongoose = require('mongoose');
 
+const NOTIFICATION_TYPES = [
+    'follow',
+    'followed-user-joined-game',
+    'game-player-joined',
+    'game-deleted',
+    'game-ended',
+    'game-request-approved',
+    'game-request-declined',
+];
+
+const notificationPreferencesSchema = {};
+for (const type of NOTIFICATION_TYPES) {
+    notificationPreferencesSchema[type] = { type: Boolean, default: true };
+}
+
 const profileSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
@@ -13,6 +28,10 @@ const profileSchema = new mongoose.Schema(
             default: 'All Levels',
         },
         positions: { type: [String], default: [] },
+        notificationPreferences: {
+            type: notificationPreferencesSchema,
+            default: () => ({}),
+        },
     },
     { timestamps: true },
 );
@@ -26,3 +45,4 @@ profileSchema.statics.ensureForUser = function (user) {
 };
 
 module.exports = mongoose.model('Profile', profileSchema);
+module.exports.NOTIFICATION_TYPES = NOTIFICATION_TYPES;

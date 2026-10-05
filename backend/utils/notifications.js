@@ -7,6 +7,10 @@ const UserFollow = require('../models/UserFollow');
 async function createNotification({ recipientId, actorId = null, eventKey, ...data }) {
     if (actorId && String(actorId) === String(recipientId)) return null;
 
+    const recipientProfile = await Profile.findOne({ userId: recipientId }).select('notificationPreferences');
+    const preference = recipientProfile?.notificationPreferences?.[data.type];
+    if (preference === false) return null;
+
     try {
         return await Notification.findOneAndUpdate(
             { eventKey },

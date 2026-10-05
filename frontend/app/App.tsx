@@ -604,6 +604,7 @@ function App() {
                             onViewProfile={handleViewProfile}
                             onRSVP={handleRSVP}
                             onViewGameDetails={handleViewGameDetails}
+                            onSignOut={handleLogout}
                         />
                     ) : (
                         <p className="text-muted-foreground">Profile not found.</p>

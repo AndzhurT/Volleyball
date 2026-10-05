@@ -353,6 +353,35 @@ export function markAllNotificationsRead(token: string) {
     return request<{ message: string }>('/api/notifications/read-all', { method: 'PUT' }, token);
 }
 
+export const NOTIFICATION_TYPES = [
+    'follow',
+    'followed-user-joined-game',
+    'game-player-joined',
+    'game-deleted',
+    'game-ended',
+    'game-request-approved',
+    'game-request-declined',
+] as const;
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+export type NotificationPreferences = Record<NotificationType, boolean>;
+
+export function getNotificationPreferences(token: string) {
+    return request<{ preferences: NotificationPreferences }>(
+        '/api/profiles/me/notification-preferences',
+        { method: 'GET' },
+        token,
+    );
+}
+
+export function updateNotificationPreferences(token: string, preferences: NotificationPreferences) {
+    return request<{ preferences: NotificationPreferences }>(
+        '/api/profiles/me/notification-preferences',
+        { method: 'PUT', body: JSON.stringify({ preferences }) },
+        token,
+    );
+}
+
 export function storeAuthToken(token: string, rememberMe: boolean) {
     sessionStorage.removeItem('volleyconnect.authToken');
 

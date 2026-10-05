@@ -8,7 +8,23 @@ import { GameCard, type Game } from './game-card';
 import { PlayerCard, type Player } from './player-card';
 import { useEffect, useRef, useState } from 'react';
 import type { GameActionRequest } from '../lib/auth-api';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
+import {
+    getNotificationPreferences,
+    getStoredAuthToken,
+    updateNotificationPreferences,
+    NOTIFICATION_TYPES,
+    type NotificationPreferences,
+    type NotificationType,
+} from '../lib/auth-api';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -47,7 +63,18 @@ interface ProfileViewProps {
     onViewProfile: (playerId: string) => void;
     onRSVP?: (gameId: string) => void;
     onViewGameDetails?: (gameId: string) => void;
+    onSignOut?: () => void;
 }
+
+const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+    follow: 'New followers',
+    'followed-user-joined-game': 'People you follow joining games',
+    'game-player-joined': 'Player joined your game',
+    'game-deleted': 'Game cancelled',
+    'game-ended': 'Game ended',
+    'game-request-approved': 'Game request approved',
+    'game-request-declined': 'Game request declined',
+};
 
 export function ProfileView({
     isOwnProfile = false,
@@ -65,13 +92,60 @@ export function ProfileView({
     onViewProfile,
     onRSVP,
     onViewGameDetails,
+    onSignOut,
 }: ProfileViewProps) {
     const [requestToDelete, setRequestToDelete] = useState<GameActionRequest | null>(null);
     const [requestActionError, setRequestActionError] = useState('');
     const [openGameList, setOpenGameList] = useState<'upcoming' | 'past' | null>(null);
     const [visibleGameCount, setVisibleGameCount] = useState(10);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [settingsView, setSettingsView] = useState<'menu' | 'notifications'>('menu');
+    const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences | null>(null);
+    const [preferencesError, setPreferencesError] = useState('');
+    const [preferencesMessage, setPreferencesMessage] = useState('');
+    const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+    const [supportNotice, setSupportNotice] = useState('');
     const gameListScrollRef = useRef<HTMLDivElement>(null);
     const gameListSentinelRef = useRef<HTMLDivElement>(null);
+    const openSettings = (view: 'menu' | 'notifications' = 'menu') => {
+        setSettingsView(view);
+        setSupportNotice('');
+        setPreferencesError('');
+        setPreferencesMessage('');
+        setIsSettingsOpen(true);
+        if (view === 'notifications') loadNotificationPreferences();
+    };
+
+    const loadNotificationPreferences = () => {
+        const token = getStoredAuthToken();
+        if (!token) {
+            setPreferencesError('Please sign in again to manage notification settings.');
+            return;
+        }
+        setPreferencesError('');
+        getNotificationPreferences(token)
+            .then((response) => setNotificationPreferences(response.preferences))
+            .catch((error: unknown) =>
+                setPreferencesError(error instanceof Error ? error.message : 'Unable to load settings.'),
+            );
+    };
+
+    const handleSaveNotificationPreferences = async () => {
+        const token = getStoredAuthToken();
+        if (!token || !notificationPreferences) return;
+        setIsSavingPreferences(true);
+        setPreferencesError('');
+        setPreferencesMessage('');
+        try {
+            const response = await updateNotificationPreferences(token, notificationPreferences);
+            setNotificationPreferences(response.preferences);
+            setPreferencesMessage('Notification settings saved.');
+        } catch (error: unknown) {
+            setPreferencesError(error instanceof Error ? error.message : 'Unable to save settings.');
+        } finally {
+            setIsSavingPreferences(false);
+        }
+    };
 
     const sortedUpcomingGames = [...upcomingGames].sort((left, right) =>
         `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`),
@@ -162,7 +236,7 @@ export function ProfileView({
                                         className="bg-primary hover:bg-primary/90 text-primary-foreground">
                                         Edit Profile
                                     </Button>
-                                    <Button variant="outline" size="icon" className="border-border">
+                                    <Button variant="outline" size="icon" className="border-border" onClick={() => openSettings()} aria-label="Settings">
                                         <Settings className="w-4 h-4" />
                                     </Button>
                                 </>
@@ -215,7 +289,7 @@ export function ProfileView({
                                         className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
                                         Edit Profile
                                     </Button>
-                                    <Button variant="outline" size="icon" className="border-border">
+                                    <Button variant="outline" size="icon" className="border-border" onClick={() => openSettings()} aria-label="Settings">
                                         <Settings className="w-4 h-4" />
                                     </Button>
                                 </>
@@ -408,6 +482,90 @@ export function ProfileView({
                         )}
                     </TabsContent>
                 )}
+
+                <Dialog
+                    open={isSettingsOpen}
+                    onOpenChange={(open) => {
+                        if (!open) setIsSettingsOpen(false);
+                    }}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>{settingsView === 'notifications' ? 'Notification Settings' : 'Settings'}</DialogTitle>
+                            <DialogDescription>
+                                {settingsView === 'notifications'
+                                    ? 'Choose which notifications you want to receive.'
+                                    : 'Manage your account options.'}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {settingsView === 'menu' ? (
+                            <div className="flex flex-col gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setSettingsView('notifications');
+                                        loadNotificationPreferences();
+                                    }}>
+                                    Notification Settings
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="justify-start"
+                                    onClick={() => setSupportNotice('Support is not available yet. Please check back later.')}>
+                                    Contact Support
+                                </Button>
+                                {supportNotice && <p className="text-sm text-muted-foreground">{supportNotice}</p>}
+                                <Button
+                                    variant="destructive"
+                                    className="justify-start"
+                                    onClick={() => {
+                                        setIsSettingsOpen(false);
+                                        onSignOut?.();
+                                    }}>
+                                    Sign Out
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {preferencesError && (
+                                    <p role="alert" className="text-sm text-destructive">
+                                        {preferencesError}
+                                    </p>
+                                )}
+                                {preferencesMessage && <p className="text-sm text-success">{preferencesMessage}</p>}
+                                {notificationPreferences === null ? (
+                                    <p className="text-sm text-muted-foreground">Loading settings...</p>
+                                ) : (
+                                    NOTIFICATION_TYPES.map((type) => (
+                                        <div key={type} className="flex items-center justify-between gap-4">
+                                            <Label htmlFor={`notif-${type}`}>{NOTIFICATION_TYPE_LABELS[type]}</Label>
+                                            <Switch
+                                                id={`notif-${type}`}
+                                                checked={notificationPreferences[type]}
+                                                onCheckedChange={(checked) =>
+                                                    setNotificationPreferences((current) =>
+                                                        current ? { ...current, [type]: checked } : current,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    ))
+                                )}
+                                <div className="flex justify-between gap-2 pt-2">
+                                    <Button variant="outline" onClick={() => setSettingsView('menu')}>
+                                        Back
+                                    </Button>
+                                    <Button
+                                        onClick={handleSaveNotificationPreferences}
+                                        disabled={isSavingPreferences || notificationPreferences === null}>
+                                        {isSavingPreferences ? 'Saving...' : 'Save'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
 
                 <Dialog
                     open={openGameList !== null}

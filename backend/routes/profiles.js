@@ -195,6 +195,59 @@ router.put('/me', protect, async (req, res, next) => {
     }
 });
 
+function defaultNotificationPreferences() {
+    const preferences = {};
+    for (const type of Profile.NOTIFICATION_TYPES) preferences[type] = true;
+    return preferences;
+}
+
+function serializeNotificationPreferences(profile) {
+    const stored = profile?.notificationPreferences || {};
+    const preferences = defaultNotificationPreferences();
+    for (const type of Profile.NOTIFICATION_TYPES) {
+        if (typeof stored[type] === 'boolean') preferences[type] = stored[type];
+    }
+    return preferences;
+}
+
+router.get('/me/notification-preferences', protect, async (req, res, next) => {
+    try {
+        const profile = await Profile.findOne({ userId: req.user.id });
+        res.json({ preferences: serializeNotificationPreferences(profile) });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.put('/me/notification-preferences', protect, async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select('_id username');
+        if (!user) return res.status(404).json({ message: 'User account not found' });
+        const input = req.body?.preferences;
+        if (!input || typeof input !== 'object' || Array.isArray(input)) {
+            return res.status(400).json({ message: 'preferences must be an object' });
+        }
+        const preferences = defaultNotificationPreferences();
+        for (const [key, value] of Object.entries(input)) {
+            if (!Profile.NOTIFICATION_TYPES.includes(key)) {
+                return res.status(400).json({ message: `Unknown notification type: ${key}` });
+            }
+            if (typeof value !== 'boolean') {
+                return res.status(400).json({ message: `Preference for ${key} must be a boolean` });
+            }
+            preferences[key] = value;
+        }
+        const profile = await Profile.findOneAndUpdate(
+            { userId: user._id },
+            { $set: { notificationPreferences: preferences }, $setOnInsert: { userId: user._id, displayName: user.username } },
+            { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+        );
+        res.json({ preferences: serializeNotificationPreferences(profile) });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.put('/:userId/follow', protect, async (req, res, next) => {
     try {
         const { userId } = req.params;
