@@ -31,6 +31,7 @@ import {
     getProfiles,
     getMyGames,
     getMyGameActionRequests,
+    getNewFriendsCount,
     getStoredAuthToken,
     followProfile,
     joinGame,
@@ -129,6 +130,7 @@ function App() {
     const [requestToEdit, setRequestToEdit] = useState<GameActionRequest | null>(null);
     const [gameActionRequests, setGameActionRequests] = useState<GameActionRequest[]>([]);
     const [areRequestsLoading, setAreRequestsLoading] = useState(false);
+    const [newFriendsThisMonth, setNewFriendsThisMonth] = useState(0);
     const { user: authUser, isLoading: isAuthLoading, setAuthenticatedUser, logout } = useAuth();
     const isLoggedIn = authUser !== null;
 
@@ -228,6 +230,24 @@ function App() {
                 if (!cancelled) setAreRequestsLoading(false);
             });
 
+        return () => {
+            cancelled = true;
+        };
+    }, [authUser, isAuthLoading]);
+
+    useEffect(() => {
+        if (isAuthLoading) return;
+        const token = getStoredAuthToken();
+        if (!authUser || !token) {
+            setNewFriendsThisMonth(0);
+            return;
+        }
+        let cancelled = false;
+        getNewFriendsCount(token)
+            .then((response) => {
+                if (!cancelled) setNewFriendsThisMonth(response.count);
+            })
+            .catch((error) => console.error('Unable to load new friends count:', error));
         return () => {
             cancelled = true;
         };
@@ -504,6 +524,7 @@ function App() {
                         isGameLoading={isGameLoading}
                         gamesPlayedThisMonth={gamesPlayedThisMonth}
                         hoursPlayedThisMonth={hoursPlayedThisMonth}
+                        newFriendsThisMonth={newFriendsThisMonth}
                         suggestedPlayers={profiles.slice(0, 4)}
                         onRSVP={handleRSVP}
                         onViewGameDetails={handleViewGameDetails}
@@ -535,6 +556,7 @@ function App() {
                             isGameLoading={isGameLoading}
                             gamesPlayedThisMonth={0}
                             hoursPlayedThisMonth={0}
+                            newFriendsThisMonth={0}
                             suggestedPlayers={[]}
                             onRSVP={handleRSVP}
                             onViewGameDetails={handleViewGameDetails}

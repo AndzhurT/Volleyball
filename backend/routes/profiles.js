@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Profile = require('../models/Profile');
+const Game = require('../models/Game');
 const UserFollow = require('../models/UserFollow');
 const { protect, optionalProtect } = require('../middleware/auth');
 const { validateProfileInput } = require('../utils/validation');
@@ -9,7 +10,19 @@ const { notifyFollow } = require('../utils/notifications');
 
 const router = express.Router();
 
-function serializePerson(user, profile, isFollowing = false) {
+function getPlayedStatsForUser(userId) {
+    return Game.find({ participants: userId, endsAt: { $lte: new Date() } })
+        .select('durationMinutes')
+        .then((games) => {
+            const durationMinutes = games.reduce((total, game) => total + (game.durationMinutes || 90), 0);
+            return {
+                gamesPlayed: games.length,
+                hoursPlayed: Math.round((durationMinutes / 60) * 10) / 10,
+            };
+        });
+}
+
+function serializePerson(user, profile, isFollowing = false, playedStats = {}) {
     return {
         id: String(user._id),
         username: user.username,
@@ -19,7 +32,7 @@ function serializePerson(user, profile, isFollowing = false) {
         location: profile.location,
         skillLevel: profile.skillLevel,
         positions: profile.positions,
-        gamesPlayed: 0,
+        gamesPlayed: playedStats.gamesPlayed || 0,
         isFollowing,
     };
 }
@@ -54,7 +67,8 @@ async function loadConnections(userId, viewerId) {
     return { followers: serializeIds(followerIds), following: serializeIds(followingIds) };
 }
 
-function serializeProfile(user, profile, connections = { followers: [], following: [] }, isFollowing = false) {
+async function serializeProfile(user, profile, connections = { followers: [], following: [] }, isFollowing = false) {
+    const playedStats = await getPlayedStatsForUser(user._id);
     return {
         id: String(user._id),
         username: user.username,
@@ -64,14 +78,14 @@ function serializeProfile(user, profile, connections = { followers: [], followin
         location: profile.location,
         skillLevel: profile.skillLevel,
         positions: profile.positions,
-        gamesPlayed: 0,
+        gamesPlayed: playedStats.gamesPlayed,
         gamesAttended: [],
         followers: connections.followers,
         following: connections.following,
         isFollowing,
         stats: {
             winRate: 0,
-            hoursPlayed: 0,
+            hoursPlayed: playedStats.hoursPlayed,
             favoritePosition: profile.positions[0] || '',
             memberSince: user.createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
         },
@@ -89,7 +103,7 @@ async function findUserProfile(userId, viewerId) {
             ? UserFollow.exists({ followerId: viewerId, followedId: user._id })
             : null,
     ]);
-    return serializeProfile(user, profile, connections, !!follow);
+    return await serializeProfile(user, profile, connections, !!follow);
 }
 
 router.get('/', optionalProtect, async (req, res, next) => {
@@ -117,12 +131,14 @@ router.get('/', optionalProtect, async (req, res, next) => {
             limit,
             total,
             totalPages: Math.ceil(total / limit),
-            data: users.map((user, index) =>
-                serializeProfile(
-                    user,
-                    profiles[index],
-                    { followers: [], following: [] },
-                    followingIds.has(String(user._id)),
+            data: await Promise.all(
+                users.map((user, index) =>
+                    serializeProfile(
+                        user,
+                        profiles[index],
+                        { followers: [], following: [] },
+                        followingIds.has(String(user._id)),
+                    ),
                 ),
             ),
         });
@@ -141,6 +157,28 @@ router.get('/me', protect, async (req, res, next) => {
     }
 });
 
+router.get('/me/new-friends', protect, async (req, res, next) => {
+    try {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        const [followingEdges, followerEdges] = await Promise.all([
+            UserFollow.find({ followerId: req.user.id }).select('followedId createdAt'),
+            UserFollow.find({ followedId: req.user.id }).select('followerId createdAt'),
+        ]);
+        const followedAtById = new Map(followingEdges.map((edge) => [String(edge.followedId), edge.createdAt]));
+        let count = 0;
+        for (const edge of followerEdges) {
+            const followedAt = followedAtById.get(String(edge.followerId));
+            if (!followedAt) continue;
+            const connectedAt = followedAt > edge.createdAt ? followedAt : edge.createdAt;
+            if (connectedAt >= oneMonthAgo) count += 1;
+        }
+        res.json({ count });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.put('/me', protect, async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id).select('_id username createdAt');
@@ -151,7 +189,7 @@ router.put('/me', protect, async (req, res, next) => {
             { $set: profileData, $setOnInsert: { userId: user._id } },
             { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
         );
-        res.json({ profile: serializeProfile(user, profile) });
+        res.json({ profile: await serializeProfile(user, profile) });
     } catch (err) {
         next(err);
     }

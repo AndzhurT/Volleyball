@@ -15,6 +15,7 @@ interface DashboardProps {
     isGameLoading?: boolean;
     gamesPlayedThisMonth?: number;
     hoursPlayedThisMonth?: number;
+    newFriendsThisMonth?: number;
     upcomingGames: Game[];
     nearbyGames: Game[];
     suggestedPlayers: Player[];
@@ -34,6 +35,7 @@ export function Dashboard({
     isGameLoading = false,
     gamesPlayedThisMonth = 0,
     hoursPlayedThisMonth = 0,
+    newFriendsThisMonth = 0,
     upcomingGames,
     nearbyGames,
     suggestedPlayers,
@@ -55,7 +57,12 @@ export function Dashboard({
             icon: Activity,
             color: 'text-primary-foreground',
         },
-        { label: 'New Friends', value: '8', icon: Users, color: 'text-primary-foreground' },
+        {
+            label: 'New Friends',
+            value: String(newFriendsThisMonth),
+            icon: Users,
+            color: 'text-primary-foreground',
+        },
     ];
 
     return (

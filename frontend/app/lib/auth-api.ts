@@ -302,6 +302,10 @@ export function unfollowProfile(token: string, userId: string) {
     );
 }
 
+export function getNewFriendsCount(token: string) {
+    return request<{ count: number }>('/api/profiles/me/new-friends', { method: 'GET' }, token);
+}
+
 export function updateMyProfile(token: string, profile: UserProfileInput) {
     return request<{ profile: UserProfile }>(
         '/api/profiles/me',
