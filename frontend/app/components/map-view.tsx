@@ -7,7 +7,10 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
+import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Separator } from './ui/separator';
 
 const GAMES_PER_BATCH = 10;
 
@@ -21,6 +24,19 @@ interface MapViewProps {
     joinedGameIds?: string[];
     onRSVP: (gameId: string) => void;
     onViewGameDetails: (gameId: string) => void;
+}
+
+interface DateTimeFilters {
+    dateFrom: string;
+    dateTo: string;
+    timeFrom: string;
+    timeTo: string;
+}
+
+const EMPTY_DATE_TIME_FILTERS: DateTimeFilters = { dateFrom: '', dateTo: '', timeFrom: '', timeTo: '' };
+
+function countActiveFilters(filters: DateTimeFilters) {
+    return Object.values(filters).filter(Boolean).length;
 }
 
 const volleyballIcon = new L.Icon({
@@ -51,6 +67,9 @@ export function MapView({ games, joinedGameIds = [], onRSVP, onViewGameDetails }
     const [typeFilter, setTypeFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [visibleGameCount, setVisibleGameCount] = useState(GAMES_PER_BATCH);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [appliedFilters, setAppliedFilters] = useState<DateTimeFilters>(EMPTY_DATE_TIME_FILTERS);
+    const [draftFilters, setDraftFilters] = useState<DateTimeFilters>(EMPTY_DATE_TIME_FILTERS);
     const gameListRef = useRef<HTMLDivElement>(null);
     const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -63,9 +82,16 @@ export function MapView({ games, joinedGameIds = [], onRSVP, onViewGameDetails }
                 game.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 game.title.toLowerCase().includes(searchQuery.toLowerCase());
 
-            return matchesSkill && matchesType && matchesSearch;
+            const matchesDate =
+                (!appliedFilters.dateFrom || game.date >= appliedFilters.dateFrom) &&
+                (!appliedFilters.dateTo || game.date <= appliedFilters.dateTo);
+            const matchesTime =
+                (!appliedFilters.timeFrom || game.time >= appliedFilters.timeFrom) &&
+                (!appliedFilters.timeTo || game.time <= appliedFilters.timeTo);
+
+            return matchesSkill && matchesType && matchesSearch && matchesDate && matchesTime;
         });
-    }, [games, skillFilter, typeFilter, searchQuery]);
+    }, [games, skillFilter, typeFilter, searchQuery, appliedFilters]);
 
     const validGames = filteredGames.filter(
         (game): game is GameWithCoords & { latitude: number; longitude: number } =>
@@ -74,9 +100,24 @@ export function MapView({ games, joinedGameIds = [], onRSVP, onViewGameDetails }
     const visibleGames = filteredGames.slice(0, visibleGameCount);
     const visibleMapGames = validGames.slice(0, visibleGameCount);
 
+    const appliedFilterCount = countActiveFilters(appliedFilters);
+    const draftFilterCount = countActiveFilters(draftFilters);
+
+    const clearDraftFilters = () => setDraftFilters(EMPTY_DATE_TIME_FILTERS);
+
+    const handleApplyFilters = () => {
+        setAppliedFilters(draftFilters);
+        setIsFilterOpen(false);
+    };
+
+    const handleFilterOpenChange = (open: boolean) => {
+        setIsFilterOpen(open);
+        if (open) setDraftFilters(appliedFilters);
+    };
+
     useEffect(() => {
         setVisibleGameCount(GAMES_PER_BATCH);
-    }, [skillFilter, typeFilter, searchQuery]);
+    }, [skillFilter, typeFilter, searchQuery, appliedFilters]);
 
     useEffect(() => {
         const sentinel = loadMoreSentinelRef.current;
@@ -142,10 +183,99 @@ export function MapView({ games, joinedGameIds = [], onRSVP, onViewGameDetails }
                             </SelectContent>
                         </Select>
 
-                        <Button variant="outline" className="border-border">
-                            <Filter className="w-4 h-4 mr-2" />
-                            More Filters
-                        </Button>
+                        <Popover open={isFilterOpen} onOpenChange={handleFilterOpenChange}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="border-border relative">
+                                    <Filter className="w-4 h-4 mr-2" />
+                                    More Filters
+                                    {appliedFilterCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">
+                                            {appliedFilterCount}
+                                        </span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-[320px] p-0">
+                                <div className="flex items-center justify-between px-3 py-2.5">
+                                    <h3 className="text-sm font-semibold">More Filters</h3>
+                                    {draftFilterCount > 0 && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={clearDraftFilters}
+                                            className="text-muted-foreground h-7 px-2 text-xs">
+                                            Clear all
+                                        </Button>
+                                    )}
+                                </div>
+                                <Separator />
+                                <div className="p-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="filter-date-from" className="text-xs text-muted-foreground">
+                                                Date from
+                                            </Label>
+                                            <Input
+                                                id="filter-date-from"
+                                                type="date"
+                                                value={draftFilters.dateFrom}
+                                                onChange={(e) => setDraftFilters({ ...draftFilters, dateFrom: e.target.value })}
+                                                className="bg-input-background border-border focus:border-primary"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="filter-date-to" className="text-xs text-muted-foreground">
+                                                Date to
+                                            </Label>
+                                            <Input
+                                                id="filter-date-to"
+                                                type="date"
+                                                value={draftFilters.dateTo}
+                                                onChange={(e) => setDraftFilters({ ...draftFilters, dateTo: e.target.value })}
+                                                className="bg-input-background border-border focus:border-primary"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="filter-time-from" className="text-xs text-muted-foreground">
+                                                Time from
+                                            </Label>
+                                            <Input
+                                                id="filter-time-from"
+                                                type="time"
+                                                value={draftFilters.timeFrom}
+                                                onChange={(e) => setDraftFilters({ ...draftFilters, timeFrom: e.target.value })}
+                                                className="bg-input-background border-border focus:border-primary"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="filter-time-to" className="text-xs text-muted-foreground">
+                                                Time to
+                                            </Label>
+                                            <Input
+                                                id="filter-time-to"
+                                                type="time"
+                                                value={draftFilters.timeTo}
+                                                onChange={(e) => setDraftFilters({ ...draftFilters, timeTo: e.target.value })}
+                                                className="bg-input-background border-border focus:border-primary"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="flex gap-2 p-3">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsFilterOpen(false)}
+                                        className="flex-1 border-border">
+                                        Cancel
+                                    </Button>
+                                    <Button size="sm" onClick={handleApplyFilters} className="flex-1">
+                                        Apply
+                                    </Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
             </Card>
