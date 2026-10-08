@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { TermsOfServiceDialog, PrivacyPolicyDialog } from './legal-documents';
 import {
     getOAuthUrl,
     login,
@@ -36,6 +37,8 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
     const [successMessage, setSuccessMessage] = useState('');
     const [resetEmail, setResetEmail] = useState('');
     const [isResettingPassword, setIsResettingPassword] = useState(false);
+    const [isTermsOpen, setIsTermsOpen] = useState(false);
+    const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
     const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
@@ -349,11 +352,17 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
                                     <input type="checkbox" className="mt-0.5 rounded border-border" required />
                                     <span>
                                         I agree to the{' '}
-                                        <button type="button" className="text-primary hover:underline">
+                                        <button
+                                            type="button"
+                                            className="text-primary hover:underline"
+                                            onClick={() => setIsTermsOpen(true)}>
                                             Terms of Service
                                         </button>{' '}
                                         and{' '}
-                                        <button type="button" className="text-primary hover:underline">
+                                        <button
+                                            type="button"
+                                            className="text-primary hover:underline"
+                                            onClick={() => setIsPrivacyOpen(true)}>
                                             Privacy Policy
                                         </button>
                                     </span>
@@ -417,6 +426,9 @@ export function AuthDialog({ open, onOpenChange, onAuthSuccess }: AuthDialogProp
                     </TabsContent>
                 </Tabs>
             </DialogContent>
+
+            <TermsOfServiceDialog open={isTermsOpen} onOpenChange={setIsTermsOpen} />
+            <PrivacyPolicyDialog open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
         </Dialog>
     );
 }
