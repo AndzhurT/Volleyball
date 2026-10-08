@@ -1,9 +1,7 @@
 import { Calendar, MapPin, Activity, Users } from 'lucide-react';
 import { GameCard, type Game } from './game-card';
 import { PlayerCard, type Player } from './player-card';
-import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 
 interface DashboardProps {
     isLoggedIn: boolean;
@@ -98,10 +96,6 @@ export function Dashboard({
                         </div>
 
                         <div className="flex flex-wrap gap-3">
-                            <Button variant="secondary" className="bg-card text-foreground hover:bg-card/90">
-                                <Calendar className="w-4 h-4 mr-2" />
-                                View Calendar
-                            </Button>
                             <Button
                                 variant="secondary"
                                 className="bg-card text-foreground hover:bg-card/90"
@@ -180,43 +174,6 @@ export function Dashboard({
                             onViewProfile={onViewProfile}
                             compact
                         />
-                    ))}
-                </div>
-            </section>
-
-            {/* Activity Feed */}
-            <section>
-                <div className="mb-4">
-                    <h2 className="text-2xl mb-1">Recent Activity</h2>
-                    <p className="text-muted-foreground">What's happening in your network</p>
-                </div>
-                <div className="space-y-3">
-                    {[
-                        {
-                            user: 'Sarah Johnson',
-                            action: 'joined',
-                            game: 'Sunday Beach Volleyball',
-                            time: '2 hours ago',
-                        },
-                        { user: 'Mike Chen', action: 'created', game: 'Competitive Indoor Match', time: '4 hours ago' },
-                        { user: 'Emma Davis', action: 'completed', game: 'Friday Night Volleyball', time: 'Yesterday' },
-                    ].map((activity, index) => (
-                        <Card key={index} className="p-4 border-2 border-border/30 bg-card">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary" />
-                                <div className="flex-1">
-                                    <p className="text-sm">
-                                        <span className="font-medium">{activity.user}</span>{' '}
-                                        <span className="text-muted-foreground">{activity.action}</span>{' '}
-                                        <span className="font-medium">{activity.game}</span>
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
-                                </div>
-                                <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/30">
-                                    {activity.action}
-                                </Badge>
-                            </div>
-                        </Card>
                     ))}
                 </div>
             </section>
