@@ -1,10 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { ChevronDown, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Badge } from './ui/badge';
+import { Checkbox } from './ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
+import { ANY_POSITION_LABEL, VOLLEYBALL_POSITIONS } from '../lib/positions';
 import type { UserProfile, UserProfileInput } from '../lib/auth-api';
 
 interface EditProfileDialogProps {
@@ -20,7 +25,8 @@ export function EditProfileDialog({ open, onOpenChange, profile, onSave }: EditP
     const [location, setLocation] = useState(profile.location);
     const [bio, setBio] = useState(profile.bio);
     const [skillLevel, setSkillLevel] = useState<UserProfile['skillLevel']>(profile.skillLevel);
-    const [positions, setPositions] = useState(profile.positions.join(', '));
+    const [positions, setPositions] = useState<string[]>(profile.positions);
+    const [isPositionsOpen, setIsPositionsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -31,9 +37,21 @@ export function EditProfileDialog({ open, onOpenChange, profile, onSave }: EditP
         setLocation(profile.location);
         setBio(profile.bio);
         setSkillLevel(profile.skillLevel);
-        setPositions(profile.positions.join(', '));
+        setPositions(profile.positions);
+        setIsPositionsOpen(false);
         setErrorMessage('');
     }, [open, profile]);
+
+    const positionOptions = [
+        ...VOLLEYBALL_POSITIONS,
+        ...profile.positions.filter((position) => !(VOLLEYBALL_POSITIONS as readonly string[]).includes(position)),
+    ];
+
+    const togglePosition = (position: string) => {
+        setPositions((current) =>
+            current.includes(position) ? current.filter((item) => item !== position) : [...current, position],
+        );
+    };
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -46,10 +64,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onSave }: EditP
                 location,
                 bio,
                 skillLevel,
-                positions: positions
-                    .split(',')
-                    .map((position) => position.trim())
-                    .filter(Boolean),
+                positions: [...new Set(positions.map((position) => position.trim()))].filter(Boolean),
             });
             onOpenChange(false);
         } catch (error) {
@@ -122,12 +137,77 @@ export function EditProfileDialog({ open, onOpenChange, profile, onSave }: EditP
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="profile-positions">Positions</Label>
-                        <Input
-                            id="profile-positions"
-                            value={positions}
-                            onChange={(event) => setPositions(event.target.value)}
-                            placeholder="Setter, Libero"
-                        />
+                        <Popover open={isPositionsOpen} onOpenChange={setIsPositionsOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    id="profile-positions"
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full justify-between font-normal"
+                                    aria-haspopup="listbox"
+                                    aria-expanded={isPositionsOpen}>
+                                    <span className={`truncate ${positions.length ? '' : 'text-muted-foreground'}`}>
+                                        {positions.length ? positions.join(', ') : ANY_POSITION_LABEL}
+                                    </span>
+                                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="w-[var(--radix-popover-trigger-width)] p-0"
+                                align="start">
+                                <div className="flex items-center justify-between border-b border-border px-3 py-2">
+                                    <span className="text-sm font-medium">Select positions</span>
+                                    {positions.length > 0 && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 px-2 text-xs text-muted-foreground"
+                                            onClick={() => setPositions([])}>
+                                            Clear
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="space-y-1 p-1">
+                                    {positionOptions.map((position, index) => {
+                                        const optionId = `profile-position-${index}`;
+                                        return (
+                                            <div
+                                                key={position}
+                                                className="flex items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent">
+                                                <Checkbox
+                                                    id={optionId}
+                                                    checked={positions.includes(position)}
+                                                    onCheckedChange={() => togglePosition(position)}
+                                                />
+                                                <Label htmlFor={optionId} className="cursor-pointer font-normal">
+                                                    {position}
+                                                </Label>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        {positions.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                                {positions.map((position) => (
+                                    <Badge
+                                        key={position}
+                                        variant="outline"
+                                        className="border-border bg-muted/50 text-muted-foreground">
+                                        {position}
+                                        <button
+                                            type="button"
+                                            onClick={() => togglePosition(position)}
+                                            aria-label={`Remove ${position}`}
+                                            className="rounded-full p-0.5 hover:bg-foreground/10">
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="profile-bio">About</Label>

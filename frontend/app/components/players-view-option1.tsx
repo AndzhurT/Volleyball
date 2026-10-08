@@ -6,6 +6,7 @@ import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
+import { VOLLEYBALL_POSITIONS } from "../lib/positions";
 
 interface PlayersViewOption1Props {
   players: Player[];
@@ -19,7 +20,7 @@ export function PlayersViewOption1({ players, onConnect, onViewProfile }: Player
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const skillLevels = ["All Levels", "Beginner", "Intermediate", "Advanced"];
-  const positions = ["All Positions", "Outside Hitter", "Middle Blocker", "Setter", "Libero", "Defensive Specialist"];
+  const positions = ["All Positions", ...VOLLEYBALL_POSITIONS];
 
   const filteredPlayers = players.filter(player => {
     if (selectedSkill && selectedSkill !== "All Levels" && player.skillLevel !== selectedSkill) return false;

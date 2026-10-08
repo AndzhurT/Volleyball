@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { GameCard, type Game } from './game-card';
 import { PlayerCard, type Player } from './player-card';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { getPositionTags } from '../lib/positions';
 import type { GameActionRequest, SupportTicket } from '../lib/auth-api';
 import {
     Dialog,
@@ -237,6 +238,8 @@ export function ProfileView({
         setOpenGameList(list);
     };
 
+    const positionTags = getPositionTags(player.positions);
+
     return (
         <div className="space-y-6">
             {/* Profile Header */}
@@ -297,17 +300,27 @@ export function ProfileView({
                                     <span>Joined {player.stats.memberSince}</span>
                                 </div>
                             </div>
-                            <Badge
-                                variant="outline"
-                                className={
-                                    player.skillLevel === 'Advanced'
-                                        ? 'bg-danger/10 text-danger border-danger/20'
-                                        : player.skillLevel === 'Intermediate'
-                                          ? 'bg-warning/10 text-warning border-warning/20'
-                                          : 'bg-success/10 text-success border-success/20'
-                                }>
-                                {player.skillLevel}
-                            </Badge>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        player.skillLevel === 'Advanced'
+                                            ? 'bg-danger/10 text-danger border-danger/20'
+                                            : player.skillLevel === 'Intermediate'
+                                              ? 'bg-warning/10 text-warning border-warning/20'
+                                              : 'bg-success/10 text-success border-success/20'
+                                    }>
+                                    {player.skillLevel}
+                                </Badge>
+                                {positionTags.map((position) => (
+                                    <Badge
+                                        key={position}
+                                        variant="outline"
+                                        className="bg-muted/50 text-muted-foreground border-border">
+                                        {position}
+                                    </Badge>
+                                ))}
+                            </div>
                         </div>
 
                         {player.bio && <p className="text-muted-foreground max-w-2xl">{player.bio}</p>}
