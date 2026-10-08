@@ -6,8 +6,8 @@ import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { GameCard, type Game } from './game-card';
 import { PlayerCard, type Player } from './player-card';
-import { useEffect, useRef, useState } from 'react';
-import type { GameActionRequest } from '../lib/auth-api';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import type { GameActionRequest, SupportTicket } from '../lib/auth-api';
 import {
     Dialog,
     DialogContent,
@@ -15,9 +15,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from './ui/dialog';
+import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
+import { Textarea } from './ui/textarea';
 import {
+    createSupportTicket,
     getNotificationPreferences,
     getStoredAuthToken,
     updateNotificationPreferences,
@@ -99,21 +102,50 @@ export function ProfileView({
     const [openGameList, setOpenGameList] = useState<'upcoming' | 'past' | null>(null);
     const [visibleGameCount, setVisibleGameCount] = useState(10);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [settingsView, setSettingsView] = useState<'menu' | 'notifications'>('menu');
+    const [settingsView, setSettingsView] = useState<'menu' | 'notifications' | 'support'>('menu');
     const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences | null>(null);
     const [preferencesError, setPreferencesError] = useState('');
     const [preferencesMessage, setPreferencesMessage] = useState('');
     const [isSavingPreferences, setIsSavingPreferences] = useState(false);
-    const [supportNotice, setSupportNotice] = useState('');
+    const [supportSubject, setSupportSubject] = useState('');
+    const [supportDescription, setSupportDescription] = useState('');
+    const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+    const [supportTicketError, setSupportTicketError] = useState('');
+    const [submittedTicket, setSubmittedTicket] = useState<SupportTicket | null>(null);
     const gameListScrollRef = useRef<HTMLDivElement>(null);
     const gameListSentinelRef = useRef<HTMLDivElement>(null);
-    const openSettings = (view: 'menu' | 'notifications' = 'menu') => {
+    const openSettings = (view: 'menu' | 'notifications' | 'support' = 'menu') => {
         setSettingsView(view);
-        setSupportNotice('');
         setPreferencesError('');
         setPreferencesMessage('');
+        setSupportTicketError('');
+        setSubmittedTicket(null);
         setIsSettingsOpen(true);
         if (view === 'notifications') loadNotificationPreferences();
+    };
+
+    const handleSubmitSupportTicket = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const token = getStoredAuthToken();
+        if (!token) {
+            setSupportTicketError('Please sign in again to contact support.');
+            return;
+        }
+        setIsSubmittingTicket(true);
+        setSupportTicketError('');
+        try {
+            const ticket = await createSupportTicket(token, {
+                subject: supportSubject,
+                description: supportDescription,
+            });
+            setSubmittedTicket(ticket);
+            setSupportSubject('');
+            setSupportDescription('');
+        } catch (error: unknown) {
+            setSupportTicketError(error instanceof Error ? error.message : 'Unable to submit your ticket.');
+        } finally {
+            setIsSubmittingTicket(false);
+        }
     };
 
     const loadNotificationPreferences = () => {
@@ -490,15 +522,23 @@ export function ProfileView({
                     }}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>{settingsView === 'notifications' ? 'Notification Settings' : 'Settings'}</DialogTitle>
+                            <DialogTitle>
+                                {settingsView === 'notifications'
+                                    ? 'Notification Settings'
+                                    : settingsView === 'support'
+                                      ? 'Contact Support'
+                                      : 'Settings'}
+                            </DialogTitle>
                             <DialogDescription>
                                 {settingsView === 'notifications'
                                     ? 'Choose which notifications you want to receive.'
-                                    : 'Manage your account options.'}
+                                    : settingsView === 'support'
+                                      ? 'Describe the issue you are running into and our team will follow up.'
+                                      : 'Manage your account options.'}
                             </DialogDescription>
                         </DialogHeader>
 
-                        {settingsView === 'menu' ? (
+                        {settingsView === 'menu' && (
                             <div className="flex flex-col gap-2">
                                 <Button
                                     variant="outline"
@@ -512,10 +552,9 @@ export function ProfileView({
                                 <Button
                                     variant="outline"
                                     className="justify-start"
-                                    onClick={() => setSupportNotice('Support is not available yet. Please check back later.')}>
+                                    onClick={() => setSettingsView('support')}>
                                     Contact Support
                                 </Button>
-                                {supportNotice && <p className="text-sm text-muted-foreground">{supportNotice}</p>}
                                 <Button
                                     variant="destructive"
                                     className="justify-start"
@@ -526,7 +565,96 @@ export function ProfileView({
                                     Sign Out
                                 </Button>
                             </div>
-                        ) : (
+                        )}
+
+                        {settingsView === 'support' && (
+                            <div className="space-y-4">
+                                {submittedTicket ? (
+                                    <div className="space-y-3">
+                                        <p className="text-sm text-success">
+                                            Your support ticket has been submitted. Our team will review it shortly.
+                                        </p>
+                                        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="font-medium">{submittedTicket.subject}</span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="border-success/30 bg-success/10 text-success">
+                                                    {submittedTicket.status}
+                                                </Badge>
+                                            </div>
+                                            <p className="mt-1 text-muted-foreground">{submittedTicket.description}</p>
+                                            <p className="mt-2 text-xs text-muted-foreground">
+                                                Submitted{' '}
+                                                {new Date(submittedTicket.createdAt).toLocaleString()}
+                                            </p>
+                                        </div>
+                                        <div className="flex justify-between gap-2 pt-2">
+                                            <Button variant="outline" onClick={() => setSettingsView('menu')}>
+                                                Back
+                                            </Button>
+                                            <Button
+                                                onClick={() => {
+                                                    setSubmittedTicket(null);
+                                                    setSupportSubject('');
+                                                    setSupportDescription('');
+                                                }}>
+                                                Submit Another
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleSubmitSupportTicket} className="space-y-4">
+                                        {supportTicketError && (
+                                            <div
+                                                role="alert"
+                                                className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                                {supportTicketError}
+                                            </div>
+                                        )}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="support-subject">Subject</Label>
+                                            <Input
+                                                id="support-subject"
+                                                value={supportSubject}
+                                                onChange={(event) => setSupportSubject(event.target.value)}
+                                                minLength={3}
+                                                maxLength={200}
+                                                placeholder="e.g. Unable to join a game"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="support-description">Describe the issue</Label>
+                                            <Textarea
+                                                id="support-description"
+                                                value={supportDescription}
+                                                onChange={(event) => setSupportDescription(event.target.value)}
+                                                minLength={10}
+                                                maxLength={5000}
+                                                rows={5}
+                                                placeholder="What happened? Include any details that will help us investigate."
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex justify-between gap-2 pt-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setSettingsView('menu')}
+                                                disabled={isSubmittingTicket}>
+                                                Back
+                                            </Button>
+                                            <Button type="submit" disabled={isSubmittingTicket}>
+                                                {isSubmittingTicket ? 'Submitting...' : 'Submit Ticket'}
+                                            </Button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        )}
+
+                        {settingsView === 'notifications' && (
                             <div className="space-y-4">
                                 {preferencesError && (
                                     <p role="alert" className="text-sm text-destructive">

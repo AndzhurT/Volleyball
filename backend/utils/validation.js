@@ -208,6 +208,17 @@ function validateGameInput(data = {}) {
     return cleanedGame;
 }
 
+function validateSupportTicketInput(data = {}) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw validationError('Support ticket payload must be a valid object.');
+    }
+
+    const subject = ensureString(data.subject, 'Subject', { minLength: 3, maxLength: 200 });
+    const description = ensureString(data.description, 'Description', { minLength: 10, maxLength: 5000 });
+
+    return { subject, description };
+}
+
 module.exports = {
     validateRegistrationInput,
     validateLoginInput,
@@ -216,4 +227,5 @@ module.exports = {
     validateVerificationTokenInput,
     validatePasswordResetInput,
     validateGameInput,
+    validateSupportTicketInput,
 };

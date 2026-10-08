@@ -40,6 +40,20 @@ export interface GameActionRequestInput {
     courtType: 'indoor' | 'outdoor' | 'beach';
 }
 
+export interface SupportTicket {
+    id: string;
+    subject: string;
+    description: string;
+    status: 'open' | 'in-progress' | 'resolved' | 'closed';
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface SupportTicketInput {
+    subject: string;
+    description: string;
+}
+
 export interface GameRecord {
     id: string;
     title: string;
@@ -256,6 +270,21 @@ export function deleteMyGameActionRequest(token: string, requestId: string) {
         },
         token,
     );
+}
+
+export function createSupportTicket(token: string, ticket: SupportTicketInput) {
+    return request<SupportTicket>(
+        '/api/support-tickets',
+        {
+            method: 'POST',
+            body: JSON.stringify(ticket),
+        },
+        token,
+    );
+}
+
+export function getMySupportTickets(token: string) {
+    return request<{ data: SupportTicket[] }>('/api/support-tickets/mine', { method: 'GET' }, token);
 }
 
 export function getGames(token?: string) {
