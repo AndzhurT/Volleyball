@@ -415,7 +415,6 @@ function App() {
 
     const gamesSortedByStart = [...games].sort(compareGameStart);
     const myGamesSortedByStart = [...myGames].sort(compareGameStart);
-    const otherPlayers = profiles.filter((player) => player.id !== authUser?.id);
     const now = Date.now();
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -526,7 +525,7 @@ function App() {
                         gamesPlayedThisMonth={gamesPlayedThisMonth}
                         hoursPlayedThisMonth={hoursPlayedThisMonth}
                         newFriendsThisMonth={newFriendsThisMonth}
-                        suggestedPlayers={otherPlayers.slice(0, 4)}
+                        suggestedPlayers={profiles.slice(0, 4)}
                         onRSVP={handleRSVP}
                         onViewGameDetails={handleViewGameDetails}
                         onConnect={handleConnect}
@@ -613,7 +612,7 @@ function App() {
 
                 {currentView === 'browse' && (
                     <PlayersViewOption1
-                        players={otherPlayers}
+                        players={profiles}
                         onConnect={handleConnect}
                         onViewProfile={handleViewProfile}
                     />

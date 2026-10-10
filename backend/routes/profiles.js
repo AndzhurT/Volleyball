@@ -110,13 +110,18 @@ router.get('/', optionalProtect, async (req, res, next) => {
     try {
         const page = Math.max(1, Number(req.query.page) || 1);
         const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+        const filter = {};
+        if (req.user?.role === 'user') {
+            filter.role = 'user';
+            filter._id = { $ne: req.user.id };
+        }
         const [users, total] = await Promise.all([
-            User.find()
+                User.find(filter)
                 .select('_id username createdAt')
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit),
-            User.countDocuments(),
+            User.countDocuments(filter),
         ]);
         const profiles = await Promise.all(users.map((user) => Profile.ensureForUser(user)));
         const follows = req.user

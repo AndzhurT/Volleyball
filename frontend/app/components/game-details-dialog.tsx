@@ -19,6 +19,7 @@ interface GameDetails {
     coordinates?: { type: 'Point'; coordinates: [number, number] };
     type: 'casual' | 'competitive';
     courtType: 'indoor' | 'outdoor' | 'beach';
+    createdBy?: string;
     playersJoined: Array<{ id: string; name: string; avatar: string }>;
 }
 
@@ -149,6 +150,11 @@ export function GameDetailsDialog({ game, open, isLoading = false, error = '', o
                                                     </span>
                                                 )}
                                                 {player.name}
+                                                {game.createdBy === player.id && (
+                                                    <Badge variant="outline" className="text-muted-foreground">
+                                                        Game Creator
+                                                    </Badge>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>
