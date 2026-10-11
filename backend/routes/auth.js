@@ -377,6 +377,22 @@ router.post('/invite-admin', protect, admin, async (req, res, next) => {
     }
 });
 
+router.get('/admins', protect, admin, async (req, res, next) => {
+    try {
+        const admins = await User.find({ role: 'admin' })
+            .select('_id username email role createdAt')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        res.json({
+            total: admins.length,
+            data: admins,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.post('/register', async (req, res, next) => {
     try {
         const { username, email, password } = validateRegistrationInput(req.body);
